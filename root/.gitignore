@@ -1,0 +1,27 @@
+# Python bytecode / cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.python-version
+
+# Virtual environments
+.venv/
+
+# Django
+db.sqlite3
+media/
+staticfiles/
+
+# pytest / tools
+.pytest_cache/
+.ruff_cache/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+
+# Env files
+.env
+.env.*

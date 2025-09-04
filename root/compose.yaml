@@ -1,0 +1,24 @@
+services:
+  web:
+    build: .
+    image: canteen-django:dev
+    env_file: .env
+    ports:
+      - '8000:8000'
+
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          ignore:
+            - .venv/
+
+        - action: rebuild
+          path: ./uv.lock
+
+        - action: rebuild
+          path: ./pyproject.toml
+
+        - action: rebuild
+          path: ./Dockerfile
