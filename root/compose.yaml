@@ -1,6 +1,16 @@
 services:
+  db:
+    image: postgres:16.5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=dev_user
+      - POSTGRES_PASSWORD=dev_password
+      - POSTGRES_DB=dev_db
+
   web:
     build: .
+    container_name: canteen_ms
     image: canteen-django:dev
     env_file: .env
     ports:
@@ -22,3 +32,6 @@ services:
 
         - action: rebuild
           path: ./Dockerfile
+
+volumes:
+  postgres_data:
