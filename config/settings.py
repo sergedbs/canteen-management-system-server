@@ -1,3 +1,4 @@
+from datetime import timedelta
 from pathlib import Path
 
 from environ import Env
@@ -31,7 +32,6 @@ DEBUG = env("DEBUG")
 
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 
-
 # Application definition
 
 STD_APPS = [
@@ -46,6 +46,8 @@ STD_APPS = [
 REMOTE_APPS = [
     "rest_framework",
     "drf_spectacular",
+    "django_filters",
+    "rest_framework_simplejwt.token_blacklist",
 ]
 
 LOCAL_APPS = [
@@ -54,6 +56,16 @@ LOCAL_APPS = [
 ]
 
 INSTALLED_APPS = [*STD_APPS, *REMOTE_APPS, *LOCAL_APPS]
+
+AUTH_USER_MODEL = "users.User"
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -85,7 +97,16 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 REST_FRAMEWORK = {
+    "DATETIME_FORMAT": "%Y-%m-%dT%H:%M:%SZ",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 20,
 }
 
 SPECTACULAR_SETTINGS = {
@@ -109,7 +130,6 @@ DATABASES = {
     }
 }
 
-
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
@@ -128,7 +148,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
@@ -139,7 +158,6 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
