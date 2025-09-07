@@ -1,13 +1,13 @@
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 
 # Enable bytecode compilation
-ENV UV_COMPILE_BYTECODE=1 
+ENV UV_COMPILE_BYTECODE=1
 
 # Copy from the cache instead of linking since it's a mounted volume
-ENV UV_LINK_MODE=copy 
+ENV UV_LINK_MODE=copy
 
 # Disable Python downloads to use the system interpreter across both images
-ENV UV_PYTHON_DOWNLOADS=0 
+ENV UV_PYTHON_DOWNLOADS=0
 
 WORKDIR /app
 
@@ -30,13 +30,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends netcat-openbsd 
 
 COPY --from=builder --chown=app:app /app /app
 
-RUN chmod +x /app/scripts/*.sh
+COPY /scripts /scripts
+RUN chmod +x /scripts/*.sh
+RUN sed -i 's/\r$//g' /scripts/entrypoint.sh
+RUN sed -i 's/\r$//g' /scripts/wait_db.sh
 
-ENV PATH="/app/.venv/bin:$PATH" 
+ENV PATH="/app/.venv/bin:$PATH"
 ENV DJANGO_SETTINGS_MODULE=config.settings
 
 EXPOSE 8000
 
-ENTRYPOINT ["/app/scripts/entrypoint.sh"]
+ENTRYPOINT ["/scripts/entrypoint.sh"]
 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

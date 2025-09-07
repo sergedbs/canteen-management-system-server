@@ -3,10 +3,13 @@ services:
     image: postgres:16.5
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+    env_file: .env
+    ports:
+      - "5432:5432"  # for dev only
     environment:
-      - POSTGRES_USER=dev_user
-      - POSTGRES_PASSWORD=dev_password
-      - POSTGRES_DB=dev_db
+      - POSTGRES_USER=$SQL_USER
+      - POSTGRES_PASSWORD=$SQL_PASSWORD
+      - POSTGRES_DB=$SQL_DATABASE
 
   web:
     build: .
@@ -19,10 +22,12 @@ services:
     develop:
       watch:
         - action: sync
-          path: .
-          target: /app
-          ignore:
-            - .venv/
+          path: ./apps
+          target: /app/apps
+
+        - action: sync
+          path: ./config
+          target: /app/config
 
         - action: rebuild
           path: ./uv.lock

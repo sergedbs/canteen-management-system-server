@@ -1,0 +1,54 @@
+[project]
+name = ""
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "django~=5.2.6",
+    "django-environ~=0.12.0",
+    "django-filter~=25.1",
+    "djangorestframework~=3.16.1",
+    "drf-spectacular~=0.28.0",
+    "psycopg[binary]~=3.2.9",
+    "ruff~=0.12.12",
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit~=4.3.0",
+]
+
+[tool.ruff]
+line-length = 120
+indent-width = 4
+
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = [
+    "E", # pycodestyle
+    "F", # Pyflakes
+    "I", # isort
+    "B", # flake8-bugbear
+    "ASYNC", # flake8-async
+    "T10", # flake8-debugger
+    "ISC", # flake8-implicit-str-concat
+    "ICN", # flake8-import-conventions
+    "PIE", # flake8-pie
+    "BLE", # flake8-blind-except
+    "SIM", # flake8-simplify
+    "PTH", # flake8-use-pathlib
+    "FIX", # flake8 - fix me
+    "N", # pep8-naming
+    "UP", # pyupgrade
+]
+ignore = [
+    "ISC001", # Disabled to avoid unexpected behaviour on `ruff format .`
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
