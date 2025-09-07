@@ -8,7 +8,9 @@ User = get_user_model()
 
 
 class RegisterView(CreateAPIView):
-    """ """
+    """
+    Sign-up a user using a corporate *.utm.md email and password of min length 8
+    """
 
     queryset = User.objects.all()
     permission_classes = [AllowAny]

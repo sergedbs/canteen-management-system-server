@@ -7,10 +7,6 @@ User = get_user_model()
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    """
-    Sign-up a user using a corporate *.utm.md email and password
-    """
-
     password = serializers.CharField(write_only=True, min_length=8)
     password2 = serializers.CharField(write_only=True, min_length=8)
 
