@@ -4,6 +4,12 @@ from django.db import models
 from apps.common.models import BaseModel
 
 
+class UserRole(models.TextChoices):
+    STUDENT = "student", "Student"
+    STAFF = "staff", "Staff"
+    ADMIN = "admin", "Administrator"
+
+
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
@@ -29,6 +35,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     first_name = models.CharField(max_length=50, blank=True)
     last_name = models.CharField(max_length=50, blank=True)
     is_staff = models.BooleanField(default=False)
+    role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.STUDENT)
 
     objects = UserManager()
 
