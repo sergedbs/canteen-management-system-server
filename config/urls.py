@@ -13,11 +13,12 @@ swagger_urls = [
 ]
 
 api_urls = [
-    path("users/", include("apps.users.urls", namespace="users")),
+    path("auth/", include("apps.authentication.urls", namespace="authentication")),
     path("", include(swagger_urls)),
 ]
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/", include(api_urls)),
+    path("", include(api_urls)),
 ]
+
