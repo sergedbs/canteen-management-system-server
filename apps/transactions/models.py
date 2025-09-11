@@ -14,7 +14,7 @@ class Balance(BaseModel):
         db_column="user_id",
     )
     current_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    on_hold = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # to ask Sergiu what it stans for
+    on_hold = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     class Meta:
         db_table = "balance"
@@ -58,7 +58,6 @@ class Transaction(BaseModel):
         ]
         ordering = ["-created_at"]
 
-        # not sure tho if this is the right way (it came to me in a dream :D)
         constraints = [
             # Payments must be tied to an order
             models.CheckConstraint(
