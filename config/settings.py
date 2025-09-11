@@ -84,6 +84,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8000",
     "http://localhost:8080",
 ]
 CORS_ALLOW_CREDENTIALS = True
@@ -125,16 +126,8 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Buy grechka, borsch and kompot easily.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
-    'SCHEMA_PATH_PREFIX': r'/api/v1',
-    'SERVERS': [
-        {
-            "url": "https://api.yourdomain.com/v1",
-            "description": "Production server"
-        },
-        {
-            "url": "http://localhost:8000/v1",
-            "description": "Development server"
-        },
+    "SERVERS": [
+        {"url": "http://localhost:8000", "description": "Development server"},
     ],
 }
 
