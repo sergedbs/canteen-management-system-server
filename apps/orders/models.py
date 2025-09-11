@@ -1,16 +1,9 @@
 from django.db import models
 
+from apps.common.constants import OrderStatus
 from apps.common.models import BaseModel
 from apps.menus.models import Menu, MenuItem
 from apps.users.models import User
-
-
-class OrderStatus(models.TextChoices):
-    PENDING = "pending", "Pending"
-    PREPARING = "preparing", "Preparing"
-    PAID = "paid", "Paid"
-    COMPLETED = "completed", "Completed"
-    CANCELLED = "cancelled", "Cancelled"
 
 
 class Order(BaseModel):
@@ -29,7 +22,7 @@ class Order(BaseModel):
     order_no = models.CharField(max_length=6, unique=True)  # for ex "ORD001"
     status = models.CharField(max_length=20, choices=OrderStatus.choices, default=OrderStatus.PENDING)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    reservation_time = models.DateTimeField(null=True, blank=True)
+    reservation_time = models.DateTimeField(null=True)
 
     class Meta:
         db_table = "order"

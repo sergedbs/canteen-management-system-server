@@ -50,6 +50,14 @@ class Menu(BaseModel):
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
 
+    items = models.ManyToManyField(
+        "Item",
+        through="MenuItem",
+        through_fields=("menu", "item"),
+        related_name="menus",
+        related_query_name="menu",
+    )
+
     class Meta:
         db_table = "menu"
         indexes = [
@@ -66,12 +74,17 @@ class MenuItem(BaseModel):
         Menu,
         on_delete=models.CASCADE,
         related_name="menu_items",
-        db_column="menu_id",
+        db_column="menu",
     )
-    item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="menu_items", db_column="item_id")
+    item = models.ForeignKey(
+        Item,
+        on_delete=models.PROTECT,
+        related_name="menu_items",
+        db_column="item",
+    )
     display_order = models.IntegerField(default=0)
     quantity = models.PositiveIntegerField()
-    override_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    override_price = models.DecimalField(max_digits=10, decimal_places=2, null=True)
     is_permanent = models.BooleanField(default=False)
 
     class Meta:

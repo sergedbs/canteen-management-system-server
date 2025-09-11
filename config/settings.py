@@ -48,6 +48,7 @@ REMOTE_APPS = [
     "drf_spectacular",
     "django_filters",
     "rest_framework_simplejwt.token_blacklist",
+    "imagekit",
 ]
 
 LOCAL_APPS = [
@@ -118,16 +119,10 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Buy grechka, borsch and kompot easily.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
-    'SCHEMA_PATH_PREFIX': r'/api/v1',
-    'SERVERS': [
-        {
-            "url": "https://api.yourdomain.com/v1",
-            "description": "Production server"
-        },
-        {
-            "url": "http://localhost:8000/v1",
-            "description": "Development server"
-        },
+    "SCHEMA_PATH_PREFIX": r"/api/v1",
+    "SERVERS": [
+        {"url": "https://api.yourdomain.com/v1", "description": "Production server"},
+        {"url": "http://localhost:8000/v1", "description": "Development server"},
     ],
 }
 
