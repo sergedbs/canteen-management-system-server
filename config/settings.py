@@ -49,6 +49,7 @@ REMOTE_APPS = [
     "django_filters",
     "rest_framework_simplejwt.token_blacklist",
     "imagekit",
+    "corsheaders",
 ]
 
 LOCAL_APPS = [
@@ -75,12 +76,19 @@ SIMPLE_JWT = {
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8000",
+    "http://localhost:8080",
+]
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = "config.urls"
 
@@ -119,10 +127,8 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Buy grechka, borsch and kompot easily.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
-    "SCHEMA_PATH_PREFIX": r"/api/v1",
     "SERVERS": [
-        {"url": "https://api.yourdomain.com/v1", "description": "Production server"},
-        {"url": "http://localhost:8000/v1", "description": "Development server"},
+        {"url": "http://localhost:8000", "description": "Development server"},
     ],
 }
 
