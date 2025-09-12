@@ -14,6 +14,7 @@ swagger_urls = [
 
 api_urls = [
     path("auth/", include("apps.authentication.urls", namespace="authentication")),
+    path("menus/", include("apps.menus.urls", namespace="menus")),
     path("", include(swagger_urls)),
 ]
 
