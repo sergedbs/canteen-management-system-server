@@ -1,37 +1,11 @@
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from django.utils import timezone
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics
+from rest_framework.permissions import AllowAny
 
 from apps.menus.models import Menu
 from apps.menus.paginators import WeeklyMenuPagination
-from apps.menus.serializers import MenuSerializer, MenuListResponseSerializer
-#
-#
-# class MenusListView(generics.ListAPIView):
-#     serializer_class = MenuSerializer
-#
-#     def get_queryset(self):
-#         return Menu.objects.prefetch_related("menu_items__item").all()
-#
-#     def list(self, request, *args, **kwargs):
-#         week_offset = int(request.query_params.get("week_offset", 0))
-#
-#         today = timezone.now().date()
-#         target_date = today + timedelta(weeks=week_offset)
-#         start_of_week = target_date - timedelta(days=target_date.weekday())
-#         end_of_week = start_of_week + timedelta(days=6)
-#
-#         queryset = self.get_queryset().filter(date__range=[start_of_week, end_of_week]).order_by("start_time")
-#         serializer = self.get_serializer(queryset, many=True)
-#         response = serializer.data
-#         navigation = {
-#                 'current_week': '?week_offset=0',
-#                 'next_week': f'?week_offset={week_offset + 1}'
-#             }
-#         if week_offset > 0:
-#             navigation['previous_week'] = f'?week_offset={week_offset - 1}'
-#         response['navigation'] = navigation
-#
-#         return Response(response)
+from apps.menus.serializers import MenuListResponseSerializer, MenuSerializer
 
 
 @extend_schema(
@@ -45,9 +19,13 @@ from apps.menus.serializers import MenuSerializer, MenuListResponseSerializer
     ],
     responses={200: MenuListResponseSerializer},
 )
-class MenusListView(generics.RetrieveAPIView):
+class MenusListView(generics.ListAPIView):
     serializer_class = MenuSerializer
     pagination_class = WeeklyMenuPagination
+    permission_classes = [
+        AllowAny,
+    ]
+    authentication_classes = ()
 
     def get_queryset(self):
-        return Menu.objects.prefetch_related('menu_items__item').all()
+        return Menu.objects.prefetch_related("menu_items__item").filter(start_time__gte=timezone.now())
