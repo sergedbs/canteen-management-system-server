@@ -1,6 +1,7 @@
 from django.db import models
 from django.db.models import Q
 
+from apps.common.constants import TransactionType
 from apps.common.models import BaseModel
 from apps.orders.models import Order
 from apps.users.models import User
@@ -19,16 +20,13 @@ class Balance(BaseModel):
     class Meta:
         db_table = "balance"
         indexes = [models.Index(fields=["user"])]
+        permissions = [
+            ("credit_balance", "Can credit a user's balance"),
+            ("debit_balance", "Can debit a user's balance"),
+        ]
 
     def __str__(self):
         return f"{self.user} • {self.current_balance} (hold {self.on_hold})"
-
-
-class TransactionType(models.TextChoices):
-    DEPOSIT = "deposit", "Deposit"
-    PAYMENT = "payment", "Payment"
-    REFUND = "refund", "Refund"
-    # ADJUSTMENT = "adjustment", "Adjustment"
 
 
 class Transaction(BaseModel):
@@ -57,6 +55,10 @@ class Transaction(BaseModel):
             models.Index(fields=["type"]),
         ]
         ordering = ["-created_at"]
+        permissions = [
+            ("refund_payment", "Can create a refund for a payment"),
+            ("view_all_transactions", "Can view all transactions"),
+        ]
 
         constraints = [
             # Payments must be tied to an order

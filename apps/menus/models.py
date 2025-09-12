@@ -95,6 +95,11 @@ class MenuItem(BaseModel):
             models.Index(fields=["item"]),
         ]
         ordering = ["menu", "display_order"]
+        permissions = [
+            ("change_menuitem_price", "Can set override price on a menu item"),
+            ("change_menuitem_quantity", "Can change available quantity on a menu item"),
+            ("set_menuitem_permanent", "Can mark a menu item as permanent"),
+        ]
 
     def __str__(self):
         return f"{self.menu} · {self.item}"

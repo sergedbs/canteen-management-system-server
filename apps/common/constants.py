@@ -7,3 +7,9 @@ class OrderStatus(models.TextChoices):
     PAID = "paid", "Paid"
     COMPLETED = "completed", "Completed"
     CANCELLED = "cancelled", "Cancelled"
+
+
+class TransactionType(models.TextChoices):
+    DEPOSIT = "deposit", "Deposit"
+    PAYMENT = "payment", "Payment"
+    REFUND = "refund", "Refund"
