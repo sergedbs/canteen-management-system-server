@@ -1,6 +1,12 @@
 from django.db import models
 
 
+class UserRole(models.TextChoices):
+    CUSTOMER = "customer", "Customer"
+    STAFF = "staff", "Staff"
+    ADMIN = "admin", "Administrator"
+
+
 class OrderStatus(models.TextChoices):
     PENDING = "pending", "Pending"
     PREPARING = "preparing", "Preparing"
