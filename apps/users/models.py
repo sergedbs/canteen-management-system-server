@@ -1,13 +1,8 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 
+from apps.common.constants import UserRole
 from apps.common.models import BaseModel
-
-
-class UserRole(models.TextChoices):
-    STUDENT = "student", "Student"
-    STAFF = "staff", "Staff"
-    ADMIN = "admin", "Administrator"
 
 
 class UserManager(BaseUserManager):
@@ -35,7 +30,8 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     first_name = models.CharField(max_length=50, blank=True)
     last_name = models.CharField(max_length=50, blank=True)
     is_staff = models.BooleanField(default=False)
-    role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.STUDENT)
+    role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.CUSTOMER)
+    is_verified = models.BooleanField(default=False)
 
     objects = UserManager()
 

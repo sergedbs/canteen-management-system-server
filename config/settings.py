@@ -57,7 +57,7 @@ LOCAL_APPS = [
     "apps.common",
     "apps.menus",
     "apps.orders",
-    "apps.transactions",
+    "apps.wallets",
     "apps.users",
 ]
 
