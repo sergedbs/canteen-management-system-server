@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.menus.models import Menu, MenuItem, Item
+from apps.menus.models import Item, Menu, MenuItem
 
 
 class ItemSerializer(serializers.ModelSerializer):
@@ -23,10 +23,3 @@ class MenuSerializer(serializers.ModelSerializer):
     class Meta:
         model = Menu
         fields = ["id", "name", "start_time", "end_time", "menu_items"]
-
-
-class MenuListResponseSerializer(serializers.Serializer):
-    previous_week = serializers.CharField(allow_null=True)
-    current_week = serializers.CharField()
-    next_week = serializers.CharField()
-    results = MenuSerializer(many=True)

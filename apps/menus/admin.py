@@ -3,16 +3,16 @@ from django.contrib import admin
 from apps.menus.models import Category, Item, Menu, MenuItem
 
 
-class ItemInline(admin.TabularInline):  # or StackedInline if you want a bigger form
+class ItemInline(admin.TabularInline):
     model = Item
-    extra = 1  # show 1 empty form by default
-    autocomplete_fields = ["category"]  # easy selection of categories
+    extra = 1
+    autocomplete_fields = ["category"]
 
 
 class MenuItemInline(admin.TabularInline):
     model = MenuItem
     extra = 1
-    autocomplete_fields = ["item"]  # so you can select from existing items
+    autocomplete_fields = ["item"]
 
 
 @admin.register(Category)
@@ -31,7 +31,7 @@ class ItemAdmin(admin.ModelAdmin):
 @admin.register(Menu)
 class MenuAdmin(admin.ModelAdmin):
     list_display = ("name", "start_time", "end_time", "is_active")
-    inlines = [MenuItemInline]  # attach MenuItems directly
+    inlines = [MenuItemInline]
     search_fields = ("name",)
 
 

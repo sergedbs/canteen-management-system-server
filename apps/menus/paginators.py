@@ -33,3 +33,15 @@ class WeeklyMenuPagination(BasePagination):
                 "results": data,
             }
         )
+
+    def get_paginated_response_schema(self, schema):
+        return {
+            "type": "object",
+            "properties": {
+                "previous_week": {"type": ["string", "null"], "example": "?week_offset=1"},
+                "current_week": {"type": "string", "example": "?week_offset=0"},
+                "next_week": {"type": "string", "example": "?week_offset=3"},
+                "results": schema,
+            },
+            "required": ["current_week", "results"],
+        }
