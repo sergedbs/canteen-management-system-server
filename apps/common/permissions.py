@@ -85,6 +85,7 @@ def _get_permission(app_label: str, codename: str):
     try:
         return Permission.objects.get(content_type__app_label=app_label, codename=codename)
     except Permission.DoesNotExist:
+        print(f"WARNING: Permission {app_label}.{codename} does not exist!")
         return None
 
 
@@ -98,4 +99,6 @@ def create_default_groups(sender, **kwargs):
             group.permissions.set(all_perms)
         else:
             perms = list(filter(None, (_get_permission(app, code) for app, code in perm_list)))
+            if not perms:
+                print(f"WARNING: No permissions found for role '{role}'!")
             group.permissions.set(perms)
