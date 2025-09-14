@@ -26,12 +26,6 @@ class PermissionMixin:
 
 
 class OwnershipMixin:
-    """
-    Filters queryset so users only see their own objects, unless they're admin/staff.
-    Works with models having 'user' or 'owner' FK to User.
-    Uses cached group checking for better performance.
-    """
-
     def get_queryset(self):
         queryset = super().get_queryset()
         user = getattr(self.request, "user", None)
@@ -47,15 +41,12 @@ class OwnershipMixin:
         # Regular users see only their own objects
         model = getattr(queryset, "model", None)
         if model:
-            # Try 'user' field first
             if hasattr(model, "user"):
                 return queryset.filter(user=user)
 
-            # Fall back to 'owner' field
             if hasattr(model, "owner"):
                 return queryset.filter(owner=user)
 
-        # If no ownership field found, return empty queryset for safety
         return queryset.none()
 
 
@@ -63,7 +54,6 @@ class CustomerVerificationMixin:
     def get_permissions(self):
         permissions = super().get_permissions() if hasattr(super(), "get_permissions") else []
 
-        # Add verification requirement for unsafe actions
         action = getattr(self, "action", None)
         if action in ["create", "update", "partial_update", "destroy"]:
             permissions.append(CustomerVerificationRequired())

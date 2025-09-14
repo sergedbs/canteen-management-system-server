@@ -13,26 +13,41 @@ ROLE_PERMISSIONS = {
         ("menus", "add_menu"),
         ("menus", "change_menu"),
         ("menus", "view_menu"),
+        ("menus", "delete_menu"),
         ("menus", "add_category"),
         ("menus", "change_category"),
         ("menus", "view_category"),
+        ("menus", "delete_category"),
         ("menus", "add_item"),
         ("menus", "change_item"),
         ("menus", "view_item"),
+        ("menus", "delete_item"),
         ("menus", "add_menuitem"),
         ("menus", "change_menuitem"),
         ("menus", "view_menuitem"),
+        ("menus", "delete_menuitem"),
         ("menus", "change_menuitem_price"),
         ("menus", "change_menuitem_quantity"),
+        ("menus", "set_menuitem_permanent"),
         # 2. Orders App
         ("orders", "view_order"),
         ("orders", "change_order_status"),
         ("orders", "view_all_orders"),
+        ("orders", "add_orderitem"),
+        ("orders", "change_orderitem"),
+        ("orders", "view_orderitem"),
+        ("orders", "delete_orderitem"),
         # 3. Wallets App (Balance, Transaction)
+        ("wallets", "add_balance"),
+        ("wallets", "change_balance"),
         ("wallets", "view_balance"),
-        ("wallets", "view_transaction"),
+        ("wallets", "delete_balance"),
         ("wallets", "credit_balance"),
         ("wallets", "debit_balance"),
+        ("wallets", "add_transaction"),
+        ("wallets", "change_transaction"),
+        ("wallets", "view_transaction"),
+        ("wallets", "delete_transaction"),
         ("wallets", "refund_payment"),
         ("wallets", "view_all_transactions"),
     ],
@@ -45,7 +60,13 @@ ROLE_PERMISSIONS = {
         ("menus", "view_menuitem"),
         # 2. Orders App - can create and view their own orders
         ("orders", "add_order"),
+        ("orders", "change_order"),
         ("orders", "view_order"),
+        ("orders", "delete_order"),
+        ("orders", "add_orderitem"),
+        ("orders", "change_orderitem"),
+        ("orders", "view_orderitem"),
+        ("orders", "delete_orderitem"),
         # 3. Wallets App - can view their own balance and transactions
         ("wallets", "view_balance"),
         ("wallets", "view_transaction"),
@@ -73,10 +94,8 @@ def create_default_groups(sender, **kwargs):
         group, created = Group.objects.get_or_create(name=role)
 
         if role == "admin":
-            # Admin gets ALL permissions in the system
             all_perms = Permission.objects.all()
             group.permissions.set(all_perms)
         else:
-            # Other roles get specific permissions
             perms = list(filter(None, (_get_permission(app, code) for app, code in perm_list)))
             group.permissions.set(perms)

@@ -19,3 +19,6 @@ class TransactionType(models.TextChoices):
     DEPOSIT = "deposit", "Deposit"
     PAYMENT = "payment", "Payment"
     REFUND = "refund", "Refund"
+
+
+ROLE_GROUP_NAMES = ["admin", "staff", "customer_verified", "customer_unverified"]
