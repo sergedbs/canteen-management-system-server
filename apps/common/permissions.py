@@ -94,15 +94,16 @@ def create_default_groups(sender, **kwargs):
     for role, perm_list in ROLE_PERMISSIONS.items():
         group, created = Group.objects.get_or_create(name=role)
 
+        if role == "admin":
+            all_perms = Permission.objects.all()
+            group.permissions.set(all_perms)
+        else:
+            perms = list(filter(None, (_get_permission(app, code) for app, code in perm_list)))
+            if not perms:
+                print(f"WARNING: No permissions found for role '{role}'!")
+            group.permissions.set(perms)
+
         if created:
-            if role == "admin":
-                all_perms = Permission.objects.all()
-                group.permissions.set(all_perms)
-            else:
-                perms = list(filter(None, (_get_permission(app, code) for app, code in perm_list)))
-                if not perms:
-                    print(f"WARNING: No permissions found for role '{role}'!")
-                group.permissions.set(perms)
             print(f"Created group '{role}' with permissions")
         else:
-            print(f"Group '{role}' already exists, skipping permission assignment")
+            print(f"Updated group '{role}' with permissions")
