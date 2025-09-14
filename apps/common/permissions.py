@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import Group, Permission
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
@@ -91,14 +92,28 @@ def _get_permission(app_label: str, codename: str):
 
 @receiver(post_migrate)
 def create_default_groups(sender, **kwargs):
+    # Only seed when auth or users app migrates
+    if sender.name not in {"django.contrib.auth", "apps.users"}:
+        return
+
+    force_update = getattr(settings, "RBAC_FORCE_UPDATE_PERMISSIONS", False)
+
     for role, perm_list in ROLE_PERMISSIONS.items():
         group, created = Group.objects.get_or_create(name=role)
 
-        if role == "admin":
-            all_perms = Permission.objects.all()
-            group.permissions.set(all_perms)
+        if created or force_update:
+            if role == "admin":
+                all_perms = Permission.objects.all()
+                group.permissions.set(all_perms)
+            else:
+                perms = list(filter(None, (_get_permission(app, code) for app, code in perm_list)))
+                if not perms:
+                    print(f"WARNING: No permissions found for role '{role}'!")
+                group.permissions.set(perms)
+
+            if created:
+                print(f"Created group '{role}' with permissions")
+            else:
+                print(f"Updated group '{role}' permissions (force_update=True)")
         else:
-            perms = list(filter(None, (_get_permission(app, code) for app, code in perm_list)))
-            if not perms:
-                print(f"WARNING: No permissions found for role '{role}'!")
-            group.permissions.set(perms)
+            print(f"Group '{role}' already exists, skipping permission assignment")
