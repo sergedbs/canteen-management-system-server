@@ -48,14 +48,24 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
         old_verified = None
 
         if not is_new:
-            old_user = User.objects.only("role", "is_verified").get(pk=self.pk)
-            old_role = old_user.role
-            old_verified = old_user.is_verified
+            try:
+                old_user = User.objects.only("role", "is_verified").get(pk=self.pk)
+                old_role = old_user.role
+                old_verified = old_user.is_verified
+            except User.DoesNotExist:
+                old_role = None
+                old_verified = None
+        else:
+            old_role = None
+            old_verified = None
 
         super().save(*args, **kwargs)
 
         if is_new or old_role != self.role or old_verified != self.is_verified:
-            self.assign_group_by_role()
+            try:
+                self.assign_group_by_role()
+            except (Group.DoesNotExist, ValueError) as e:
+                print(f"Warning: Could not assign groups for user {self.email}: {e}")
 
     def assign_group_by_role(self):
         role_group_names = ROLE_GROUP_NAMES
@@ -66,8 +76,11 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
 
         group_name = self.get_group_name()
         if group_name:
-            group = Group.objects.get(name=group_name)
-            self.groups.add(group)
+            try:
+                group = Group.objects.get(name=group_name)
+                self.groups.add(group)
+            except Group.DoesNotExist:
+                print(f"Warning: Group '{group_name}' does not exist for user {self.email}")
 
     def is_verified_customer(self):
         return self.role == UserRole.CUSTOMER and self.is_verified
