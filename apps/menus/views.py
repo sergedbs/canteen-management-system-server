@@ -1,6 +1,12 @@
-from rest_framework import status
+from django.utils import timezone
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from apps.menus.models import Menu
+from apps.menus.paginators import WeeklyMenuPagination
+from apps.menus.serializers import MenuSerializer
 
 
 # --- Items ---
@@ -44,9 +50,22 @@ class CategoryDetailView(APIView):
 
 
 # --- Menus ---
-class MenusView(APIView):
-    def get(self, request):
-        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="week_offset",
+            type=int,
+            description="Week offset from current week (0 for current week, positive for future weeks)",
+            default=0,
+        ),
+    ],
+)
+class MenusView(generics.ListAPIView):
+    serializer_class = MenuSerializer
+    pagination_class = WeeklyMenuPagination
+
+    def get_queryset(self):
+        return Menu.objects.prefetch_related("menu_items__item").filter(start_time__gte=timezone.now())
 
     def post(self, request):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
