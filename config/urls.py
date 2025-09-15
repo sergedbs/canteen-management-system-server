@@ -18,7 +18,6 @@ api_urls = [
     path("wallets/", include("apps.wallets.urls", namespace="wallets")),
     path("orders/", include("apps.orders.urls", namespace="orders")),
     path("", include("apps.menus.urls", namespace="menus")),
-    path("", include("apps.orders.urls", namespace="orders")),
     path("", include(swagger_urls)),
 ]
 

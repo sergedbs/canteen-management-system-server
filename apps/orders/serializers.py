@@ -70,6 +70,31 @@ class OrderCreateSerializer(serializers.ModelSerializer):
                 except Menu.DoesNotExist:
                     pass
 
+    def validate(self, attrs):
+        items = self.initial_data.get("items", [])
+        total_amount = Decimal("0.00")
+
+        for item in items:
+            try:
+                menu_item = MenuItem.objects.get(pk=item["menu_item_id"])
+            except MenuItem.DoesNotExist as e:
+                raise serializers.ValidationError(f"Menu item {item['menu_item_id']} does not exist") from e
+
+            qty = int(item["quantity"])
+            unit_price = menu_item.override_price or menu_item.item.base_price
+            total_amount += unit_price * qty
+
+        user = self.context["request"].user
+        balance = user.balance
+
+        available = balance.current_balance - balance.on_hold
+        if total_amount > available:
+            raise serializers.ValidationError(
+                {"balance": f"Insufficient funds. Order total is {total_amount}, but only {available} is available."}
+            )
+
+        return attrs
+
     @staticmethod
     def _generate_order_no():
         chars = string.ascii_uppercase + string.digits
