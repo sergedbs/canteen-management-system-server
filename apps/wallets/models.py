@@ -1,14 +1,14 @@
+from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
 from apps.common.models import BaseModel
 from apps.orders.models import Order
-from apps.users.models import User
 
 
 class Balance(BaseModel):
     user = models.OneToOneField(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="balance",
         db_column="user_id",

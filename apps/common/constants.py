@@ -17,4 +17,3 @@ class MenuType(models.TextChoices):
     BREAKFAST = "breakfast", "Breakfast"
     LUNCH = "lunch", "Lunch"
     DINNER = "dinner", "Dinner"
-

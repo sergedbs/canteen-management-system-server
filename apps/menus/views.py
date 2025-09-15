@@ -1,15 +1,15 @@
+from django.db.models import Prefetch
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.db.models import Prefetch
 
 from apps.common.constants import OrderStatus
 from apps.menus.models import Menu, MenuItem
-from apps.orders.models import OrderItem
 from apps.menus.paginators import WeeklyMenuPagination
 from apps.menus.serializers import MenuSerializer
+from apps.orders.models import OrderItem
 
 
 # --- Items ---
@@ -71,15 +71,13 @@ class MenusView(generics.ListAPIView):
         return Menu.objects.prefetch_related(
             Prefetch(
                 "menu_items",
-                queryset=MenuItem.objects.select_related('item').prefetch_related(
+                queryset=MenuItem.objects.select_related("item").prefetch_related(
                     Prefetch(
                         "order_items",
-                        queryset=OrderItem.objects.filter(
-                            order__status__in=OrderStatus.active()
-                        ),
-                        to_attr="filtered_order_items"
+                        queryset=OrderItem.objects.filter(order__status__in=OrderStatus.active()),
+                        to_attr="filtered_order_items",
                     )
-                )
+                ),
             )
         ).filter(start_time__gte=timezone.now())
 

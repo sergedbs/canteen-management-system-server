@@ -1,14 +1,15 @@
 from rest_framework import status
+from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.orders.models import Order
+from apps.orders.serializers import OrderCreateSerializer
 
-class OrdersView(APIView):
-    def get(self, request):
-        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
-    def post(self, request):
-        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+class OrderCreateView(CreateAPIView):
+    queryset = Order.objects.all()
+    serializer_class = OrderCreateSerializer
 
 
 class OrderByIdView(APIView):
