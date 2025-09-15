@@ -14,6 +14,7 @@ class Category(BaseModel):
     class Meta:
         db_table = "category"
         ordering = ("display_order", "name")
+        verbose_name_plural = "Categories"
 
     def __str__(self):
         return self.name
