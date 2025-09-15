@@ -35,7 +35,7 @@ class Transaction(BaseModel):
     balance = models.ForeignKey(
         Balance,
         on_delete=models.CASCADE,
-        related_name="transactions",
+        related_name="wallets",
         db_column="balance_id",
     )
     order = models.ForeignKey(
@@ -43,7 +43,7 @@ class Transaction(BaseModel):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="transactions",
+        related_name="wallets",
         db_column="order_id",
     )
     type = models.CharField(max_length=20, choices=TransactionType.choices)
