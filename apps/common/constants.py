@@ -8,6 +8,10 @@ class OrderStatus(models.TextChoices):
     COMPLETED = "completed", "Completed"
     CANCELLED = "cancelled", "Cancelled"
 
+    @classmethod
+    def active(cls):
+        return [cls.PENDING, cls.PREPARING, cls.PAID, cls.COMPLETED]
+
 
 class MenuType(models.TextChoices):
     BREAKFAST = "breakfast", "Breakfast"

@@ -3,8 +3,11 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.db.models import Prefetch
 
-from apps.menus.models import Menu
+from apps.common.constants import OrderStatus
+from apps.menus.models import Menu, MenuItem
+from apps.orders.models import OrderItem
 from apps.menus.paginators import WeeklyMenuPagination
 from apps.menus.serializers import MenuSerializer
 
@@ -65,10 +68,23 @@ class MenusView(generics.ListAPIView):
     pagination_class = WeeklyMenuPagination
 
     def get_queryset(self):
-        return Menu.objects.prefetch_related("menu_items__item").filter(start_time__gte=timezone.now())
+        return Menu.objects.prefetch_related(
+            Prefetch(
+                "menu_items",
+                queryset=MenuItem.objects.select_related('item').prefetch_related(
+                    Prefetch(
+                        "order_items",
+                        queryset=OrderItem.objects.filter(
+                            order__status__in=OrderStatus.active()
+                        ),
+                        to_attr="filtered_order_items"
+                    )
+                )
+            )
+        ).filter(start_time__gte=timezone.now())
 
-    def post(self, request):
-        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+    # def post(self, request):
+    #     return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 class MenuDetailView(APIView):
