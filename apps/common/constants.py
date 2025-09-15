@@ -7,3 +7,10 @@ class OrderStatus(models.TextChoices):
     PAID = "paid", "Paid"
     COMPLETED = "completed", "Completed"
     CANCELLED = "cancelled", "Cancelled"
+
+
+class MenuType(models.TextChoices):
+    BREAKFAST = "breakfast", "Breakfast"
+    LUNCH = "lunch", "Lunch"
+    DINNER = "dinner", "Dinner"
+
