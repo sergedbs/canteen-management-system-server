@@ -57,16 +57,18 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             "total_amount",
         ]
 
-    def get_fields(self):
-        fields = super().get_fields()
-        request_data = self.initial_data
-        menu_id = request_data.get("menu")
-        try:
-            menu = Menu.objects.get(pk=menu_id)
-            fields["items"].child.context.update({"menu": menu})
-        except Menu.DoesNotExist:
-            pass
-        return fields
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get("request")
+
+        if request and hasattr(self, "initial_data"):
+            menu_id = self.initial_data.get("menu")
+            if menu_id:
+                try:
+                    menu = Menu.objects.get(pk=menu_id)
+                    self.fields["items"].child.context.update({"menu": menu})
+                except Menu.DoesNotExist:
+                    pass
 
     @staticmethod
     def _generate_order_no():
