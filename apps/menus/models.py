@@ -51,7 +51,7 @@ class Menu(BaseModel):
     name = models.CharField(max_length=120)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
-    type = models.CharField(choices=MenuType.choices, max_length=20)
+    type = models.CharField(choices=MenuType.choices, max_length=20, default=MenuType.BREAKFAST)
 
     items = models.ManyToManyField(
         "Item",
