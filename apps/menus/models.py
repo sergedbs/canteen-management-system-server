@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from apps.common.constants import MenuType
 from apps.common.models import BaseModel
 
 
@@ -13,6 +14,7 @@ class Category(BaseModel):
     class Meta:
         db_table = "category"
         ordering = ("display_order", "name")
+        verbose_name_plural = "Categories"
 
     def __str__(self):
         return self.name
@@ -49,6 +51,7 @@ class Menu(BaseModel):
     name = models.CharField(max_length=120)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
+    type = models.CharField(choices=MenuType.choices, max_length=20)
 
     items = models.ManyToManyField(
         "Item",

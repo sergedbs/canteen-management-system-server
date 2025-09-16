@@ -12,6 +12,7 @@ dependencies = [
     { name = "django-environ" },
     { name = "django-filter" },
     { name = "django-imagekit" },
+    { name = "django-unfold" },
     { name = "djangorestframework" },
     { name = "djangorestframework-simplejwt", extra = ["crypto"] },
     { name = "drf-spectacular" },
@@ -32,6 +33,7 @@ requires-dist = [
     { name = "django-environ", specifier = "~=0.12.0" },
     { name = "django-filter", specifier = "~=25.1" },
     { name = "django-imagekit", specifier = ">=5.0.0" },
+    { name = "django-unfold", specifier = ">=0.65.0" },
     { name = "djangorestframework", specifier = "~=3.16.1" },
     { name = "djangorestframework-simplejwt", extras = ["crypto"], specifier = "~=5.5.1" },
     { name = "drf-spectacular", specifier = "~=0.28.0" },
@@ -218,6 +220,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/61/cd/02611fc0cda31b17fec62c3235234ccf9920a4137de2b677e603749b968e/django-imagekit-5.0.0.tar.gz", hash = "sha256:aae9f74a8e9b6ceb5d15f7d8e266302901e76d9f532c78bd5135cb0fa206a6b0", size = 60041, upload-time = "2023-09-28T00:30:40.062Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/99/0e/a2a2044e7dab7c7aced92574b7428d65edc370024b94a72d5f00293076fe/django_imagekit-5.0.0-py3-none-any.whl", hash = "sha256:a8e77ed6549751026a51f961bb2cd5fda739be691496da8eecbe68ffb966c261", size = 39240, upload-time = "2023-09-28T01:00:43.931Z" },
+]
+
+[[package]]
+name = "django-unfold"
+version = "0.65.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/32/b7/0a1c17506bdfa1c9dc3a33166a6fee522da63deee8e7980dea7eb1a24461/django_unfold-0.65.0.tar.gz", hash = "sha256:7960b2f6e18cb883920b6bc03e255bcf8ca94c18c4f6caa770ff65eeb64d8724", size = 1070476, upload-time = "2025-08-25T07:57:43.966Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1e/42/23cd8a882f344fb653441e92856ad6135ba46e6fb80eab1e2524a2ef115b/django_unfold-0.65.0-py3-none-any.whl", hash = "sha256:1282dfaee3d7ac5a70ba63b3974667c6453efa1eda29dcafc5470b77241e4709", size = 1178465, upload-time = "2025-08-25T07:57:42.314Z" },
 ]
 
 [[package]]

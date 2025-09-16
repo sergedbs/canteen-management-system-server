@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.safestring import mark_safe
+from unfold.admin import ModelAdmin
+
 
 from .models import User
 
@@ -8,12 +10,10 @@ from .models import User
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     model = User
-
     list_display = ("email", "first_name", "last_name", "is_staff", "role", "is_verified")
     ordering = ("email",)
     search_fields = ("email", "first_name", "last_name")
     filter_horizontal = ("groups",)
-
     exclude = ("user_permissions",)
     readonly_fields = ("last_login", "all_permissions")
 

@@ -34,6 +34,18 @@ ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 
 # Application definition
 
+UNFOLD_APPS = [
+    "unfold",
+    "unfold.contrib.filters",
+    "unfold.contrib.forms",
+    "unfold.contrib.inlines",
+    "unfold.contrib.import_export",
+    "unfold.contrib.guardian",
+    "unfold.contrib.simple_history",
+    "unfold.contrib.location_field",
+    "unfold.contrib.constance",
+]
+
 STD_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -61,7 +73,7 @@ LOCAL_APPS = [
     "apps.users",
 ]
 
-INSTALLED_APPS = [*STD_APPS, *REMOTE_APPS, *LOCAL_APPS]
+INSTALLED_APPS = [*UNFOLD_APPS, *STD_APPS, *REMOTE_APPS, *LOCAL_APPS]
 
 AUTH_USER_MODEL = "users.User"
 
@@ -131,6 +143,28 @@ SPECTACULAR_SETTINGS = {
         {"url": "http://localhost:8000", "description": "Development server"},
     ],
 }
+
+UNFOLD = {
+    "SITE_TITLE": "TrayGo administration",
+    "SITE_HEADER": "TrayGo administration",
+    "SITE_BRAND": "TrayGo",
+    "COLORS": {
+        "primary": {
+            "50": "#edf2fe",
+            "100": "#d9e3fd",
+            "200": "#b3c7fb",
+            "300": "#8daaf9",
+            "400": "#678ef7",
+            "500": "#4874e4",
+            "600": "#3a5ec4",
+            "700": "#2c49a3",
+            "800": "#1f3482",
+            "900": "#132062",
+            "950": "#0a143d",
+        },
+    },
+}
+
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases

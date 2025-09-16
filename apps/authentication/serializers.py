@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model, password_validation
 from rest_framework import serializers
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.users.utils import extract_name_from_email
 
@@ -35,3 +36,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         validated_data["last_name"] = last
         user = User.objects.create_user(**validated_data)
         return user
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        refresh = RefreshToken.for_user(instance)
+        data["refresh"] = str(refresh)
+        data["access"] = str(refresh.access_token)
+        return data
