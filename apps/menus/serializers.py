@@ -9,10 +9,19 @@ class MenuItemSerializer(serializers.ModelSerializer):
     item_description = serializers.CharField(source="item.description")
     item_base_price = serializers.DecimalField(source="item.base_price", max_digits=10, decimal_places=2)
     remaining_quantity = serializers.SerializerMethodField()
+    category = serializers.CharField(source="item.category.name")
 
     class Meta:
         model = MenuItem
-        fields = ["id", "quantity", "item_name", "item_description", "item_base_price", "remaining_quantity"]
+        fields = [
+            "id",
+            "quantity",
+            "item_name",
+            "item_description",
+            "item_base_price",
+            "remaining_quantity",
+            "category",
+        ]
 
     def get_remaining_quantity(self, obj):
         ordered_quantity = (
