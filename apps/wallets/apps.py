@@ -7,3 +7,4 @@ class WalletsConfig(AppConfig):
 
     def ready(self):
         import apps.wallets.signals  # noqa
+

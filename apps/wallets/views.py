@@ -28,3 +28,4 @@ class WalletTransactionListView(APIView):
 class WalletTransactionDetailView(APIView):
     def get(self, request, user_id, pk):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+

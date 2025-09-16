@@ -31,6 +31,10 @@ class Order(BaseModel):
             models.Index(fields=["menu"]),
             models.Index(fields=["status"]),
         ]
+        permissions = [
+            ("change_order_status", "Can change order status"),
+            ("view_all_orders", "Can view all orders (bypass ownership)"),
+        ]
 
     def __str__(self):
         return f"{self.order_no} • {self.user}"
