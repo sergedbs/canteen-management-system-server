@@ -135,5 +135,8 @@ class OrderCreateSerializer(serializers.ModelSerializer):
 
         order.total_amount = total_amount
         order.save()
+        user.balance.on_hold += total_amount
+        user.balance.save()
+
 
         return order
