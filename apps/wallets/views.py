@@ -1,12 +1,25 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import generics
+
+from apps.wallets.models import Balance
+from apps.wallets.serializers import BalanceSerializer
+from apps.common.permissions import IsOwnerOrAdmin
+from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
 
 
 # Wallet
-class WalletView(APIView):
-    def get(self, request, user_id):
-        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+class WalletView(generics.RetrieveAPIView):
+    queryset = Balance.objects.select_related("user")
+    serializer_class = BalanceSerializer
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    lookup_field = "user_id"
+
+    def get_object(self):
+        user_id = self.kwargs.get("user_id")
+        return get_object_or_404(Balance, user__id=user_id)
 
 
 class WalletDepositView(APIView):

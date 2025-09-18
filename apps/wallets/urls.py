@@ -6,7 +6,7 @@ app_name = "wallets"
 
 urlpatterns = [
     # Wallet endpoints
-    path("<int:user_id>/", views.WalletView.as_view(), name="wallet-detail"),
+    path("<uuid:user_id>/", views.WalletView.as_view(), name="wallet-detail"),
     path("<int:user_id>/deposit/", views.WalletDepositView.as_view(), name="wallet-deposit"),
     path("<int:user_id>/change/", views.WalletWithdrawView.as_view(), name="wallet-withdraw"),
     # Transactions under wallet
