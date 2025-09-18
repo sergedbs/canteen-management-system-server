@@ -10,5 +10,6 @@ urlpatterns = [
     path("find/<str:orderNo>", views.OrderByNumberView.as_view()),  # GET order by order number
     path("<uuid:orderId>/process", views.OrderProcessView.as_view()),  # POST
     path("<uuid:orderId>/cancel", views.OrderCancelView.as_view()),  # POST
-    path("<uuid:orderId>/refund", views.OrderRefundView.as_view()),  # POST
+    path("<uuid:orderId>/capture", views.CapturePaymentView.as_view()),  # POST - Staff captures payment
+    path("<uuid:orderId>/refund", views.RefundPaymentView.as_view()),  # POST - Staff refunds order
 ]
