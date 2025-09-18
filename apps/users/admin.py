@@ -1,12 +1,12 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.safestring import mark_safe
-from unfold.admin import ModelAdmin
 
 from .models import User
 
 
 @admin.register(User)
-class UserAdmin(ModelAdmin):
+class UserAdmin(BaseUserAdmin):
     model = User
     list_display = ("email", "first_name", "last_name", "is_staff", "role", "is_verified")
     ordering = ("email",)
