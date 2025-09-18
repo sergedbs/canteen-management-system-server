@@ -1,13 +1,12 @@
-from rest_framework import status
+from django.shortcuts import get_object_or_404
+from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import generics
 
+from apps.common.permissions import IsOwnerOrAdmin
 from apps.wallets.models import Balance
 from apps.wallets.serializers import BalanceSerializer
-from apps.common.permissions import IsOwnerOrAdmin
-from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import get_object_or_404
 
 
 # Wallet
@@ -41,4 +40,3 @@ class WalletTransactionListView(APIView):
 class WalletTransactionDetailView(APIView):
     def get(self, request, user_id, pk):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
-

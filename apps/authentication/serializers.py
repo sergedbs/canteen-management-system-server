@@ -1,6 +1,5 @@
 from django.contrib.auth import get_user_model, password_validation
 from rest_framework import serializers
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from apps.users.utils import extract_name_from_email
@@ -12,7 +11,7 @@ class TokenWithRoleObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        token['role'] = user.role
+        token["role"] = user.role
 
         return token
 

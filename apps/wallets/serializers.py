@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from apps.wallets.models import Balance
 
 
@@ -11,4 +12,3 @@ class BalanceSerializer(serializers.ModelSerializer):
 
     def get_available_balance(self, obj):
         return str(obj.current_balance - obj.on_hold)
-
