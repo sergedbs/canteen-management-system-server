@@ -9,7 +9,7 @@
         "type": "deposit",
         "amount": "500.00",
         "remaining_balance": "500.00",
-        "balance": "6a5fcf9c-0054-4a99-a879-35e0317ce4f1",
+        "balance": "2c953bdb-259e-4adf-99fb-43b20223a2cc",
         "order": null
       }
     },
@@ -23,7 +23,7 @@
         "type": "deposit",
         "amount": "255.50",
         "remaining_balance": "755.50",
-        "balance": "6a5fcf9c-0054-4a99-a879-35e0317ce4f1",
+        "balance": "2c953bdb-259e-4adf-99fb-43b20223a2cc",
         "order": null
       }
     },
@@ -37,7 +37,7 @@
         "type": "payment",
         "amount": "-73.50",
         "remaining_balance": "682.00",
-        "balance": "6a5fcf9c-0054-4a99-a879-35e0317ce4f1",
+        "balance": "2c953bdb-259e-4adf-99fb-43b20223a2cc",
         "order": "10000001-0000-0000-0000-000000000001"
       }
     },
@@ -51,7 +51,7 @@
         "type": "deposit",
         "amount": "600.00",
         "remaining_balance": "600.00",
-        "balance": "c7c93f49-bc1a-4cdf-8812-ce94a70ba1c8",
+        "balance": "63607077-4926-4a1a-92c4-22ce0fb6200a",
         "order": null
       }
     },
@@ -65,7 +65,7 @@
         "type": "payment",
         "amount": "-85.00",
         "remaining_balance": "515.00",
-        "balance": "c7c93f49-bc1a-4cdf-8812-ce94a70ba1c8",
+        "balance": "63607077-4926-4a1a-92c4-22ce0fb6200a",
         "order": "10000001-0000-0000-0000-000000000002"
       }
     },
@@ -79,7 +79,7 @@
         "type": "refund",
         "amount": "63.00",
         "remaining_balance": "745.00",
-        "balance": "6a5fcf9c-0054-4a99-a879-35e0317ce4f1",
+        "balance": "2c953bdb-259e-4adf-99fb-43b20223a2cc",
         "order": "10000001-0000-0000-0000-000000000003"
       }
     },
@@ -93,7 +93,7 @@
         "type": "deposit",
         "amount": "125.00",
         "remaining_balance": "125.00",
-        "balance": "3bb0e533-f340-4ed5-8238-2c601d3305ba",
+        "balance": "4e60b07b-3922-4cdb-91c0-a7aae12dad2e",
         "order": null
       }
     }
