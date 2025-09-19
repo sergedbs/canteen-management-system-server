@@ -171,6 +171,7 @@ class OrderItemListSerializer(serializers.ModelSerializer):
 class OrderListSerializer(serializers.ModelSerializer):
     menu = serializers.CharField(source="menu.name", read_only=True)
     items = OrderItemListSerializer(many=True, read_only=True)
+    is_active = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -185,3 +186,6 @@ class OrderListSerializer(serializers.ModelSerializer):
             "reservation_time",
             "user",
         ]
+
+    def get_is_active(self, obj):
+        return obj.menu.end_time > timezone.now()
