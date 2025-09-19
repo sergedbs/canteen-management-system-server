@@ -1,10 +1,10 @@
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.common.mixins import PermissionMixin, VerifiedOwnerMixin
+from apps.common.mixins import PermissionMixin, VerifiedCustomerMixin, VerifiedOwnerMixin
 from apps.users.models import User
 from apps.wallets.models import Balance, Transaction
 from apps.wallets.serializers import (
@@ -12,6 +12,11 @@ from apps.wallets.serializers import (
     DepositSerializer,
     TransactionPublicSerializer,
 )
+
+
+class _MeMixin(VerifiedCustomerMixin):
+    def _bind_me(self, request):
+        self.kwargs["user_id"] = request.user.id
 
 
 # Wallet
@@ -129,6 +134,109 @@ class WalletTransactionListView(VerifiedOwnerMixin, generics.ListAPIView):
 class WalletTransactionDetailView(VerifiedOwnerMixin, generics.RetrieveAPIView):
     serializer_class = TransactionPublicSerializer
     required_permission = "wallets.view_transaction"
+
+    def get_object(self):
+        user_id = self.kwargs.get("user_id")
+        transaction_id = self.kwargs.get("pk")
+
+        user = get_object_or_404(User, id=user_id)
+        try:
+            balance = Balance.objects.get(user=user)
+            transaction = get_object_or_404(
+                Transaction.objects.select_related("order"), balance=balance, id=transaction_id
+            )
+            return transaction
+        except Balance.DoesNotExist as err:
+            from django.http import Http404
+
+            raise Http404("User has no wallet balance") from err
+
+
+@extend_schema(
+    summary="Get my wallet balance",
+    description="Returns the authenticated & verified customer's wallet snapshot: current balance, on-hold,available.",
+    operation_id="wallet_me_balance_retrieve",
+    parameters=[],
+    responses={200: BalanceSerializer},
+    tags=["Wallets"],
+)
+class WalletDetailMeView(_MeMixin, generics.RetrieveAPIView):
+    serializer_class = BalanceSerializer
+    required_permission = "wallets.view_balance"
+    lookup_url_kwarg = None
+
+    def get(self, request, *args, **kwargs):
+        self._bind_me(request)
+        return super().get(request, *args, **kwargs)
+
+    def get_object(self):
+        user_id = self.kwargs.get("user_id")
+        user = get_object_or_404(User, id=user_id)
+        balance, _ = Balance.objects.get_or_create(user=user)
+        return balance
+
+
+@extend_schema(
+    summary="Get my wallet transactions",
+    description="Paginated list of the authenticated & verified customer's transactions.",
+    operation_id="wallet_me_transactions_list",
+    parameters=[
+        OpenApiParameter(
+            name="page",
+            description="Page number (pagination)",
+            required=False,
+            type=int,
+            location=OpenApiParameter.QUERY,
+        ),
+    ],
+    responses={200: TransactionPublicSerializer(many=True)},
+    tags=["Wallets"],
+    examples=[
+        OpenApiExample(
+            "Transaction item",
+            value={"id": 42, "type": "DEPOSIT", "amount": "50.00", "remaining_balance": "120.00", "order_no": None},
+        )
+    ],
+)
+class WalletTransactionsMeView(_MeMixin, generics.ListAPIView):
+    serializer_class = TransactionPublicSerializer
+    required_permission = "wallets.view_transaction"
+    lookup_url_kwarg = None
+
+    def get(self, request, *args, **kwargs):
+        self._bind_me(request)
+        return super().get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        user_id = self.kwargs.get("user_id")
+        user = get_object_or_404(User, id=user_id)
+        try:
+            balance = Balance.objects.get(user=user)
+            return Transaction.objects.filter(balance=balance).select_related("order")
+        except Balance.DoesNotExist:
+            return Transaction.objects.none()
+
+
+@extend_schema(
+    summary="Get my transaction details",
+    description="Details for a specific transaction belonging to the authenticated & verified customer.",
+    operation_id="wallet_me_transaction_retrieve",
+    parameters=[
+        OpenApiParameter(
+            name="pk", description="Transaction ID", required=True, type=int, location=OpenApiParameter.PATH
+        ),
+    ],
+    responses={200: TransactionPublicSerializer},
+    tags=["Wallets"],
+)
+class WalletTransactionDetailMeView(_MeMixin, generics.RetrieveAPIView):
+    serializer_class = TransactionPublicSerializer
+    required_permission = "wallets.view_transaction"
+    lookup_url_kwarg = None
+
+    def get(self, request, *args, **kwargs):
+        self._bind_me(request)
+        return super().get(request, *args, **kwargs)
 
     def get_object(self):
         user_id = self.kwargs.get("user_id")
