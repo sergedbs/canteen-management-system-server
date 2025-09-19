@@ -1,15 +1,13 @@
-from rest_framework import permissions as drf_permissions
-
 from .drf_permissions import CustomerVerificationRequired, IsOwnerOrAdmin, RoleBasedPermission
 from .utils import is_admin_or_staff, is_authenticated
 
 
 class PermissionMixin:
-    permission_classes = [drf_permissions.IsAuthenticated, RoleBasedPermission]
+    permission_classes = [RoleBasedPermission]
 
 
 class OwnershipMixin:
-    permission_classes = [drf_permissions.IsAuthenticated, IsOwnerOrAdmin]
+    permission_classes = [IsOwnerOrAdmin]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -32,14 +30,11 @@ class OwnershipMixin:
 
 
 class VerifiedCustomerMixin:
-    permission_classes = [drf_permissions.IsAuthenticated, CustomerVerificationRequired]
+    permission_classes = [CustomerVerificationRequired]
 
 
 class VerifiedOwnerMixin:
-    # Combines verification requirement with ownership checking.
-    # Use this for views where verified customers can only access their own data.
-
-    permission_classes = [drf_permissions.IsAuthenticated, CustomerVerificationRequired, IsOwnerOrAdmin]
+    permission_classes = [CustomerVerificationRequired, IsOwnerOrAdmin]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -61,7 +56,7 @@ class VerifiedOwnerMixin:
         return queryset.none()
 
 
-# Here is the example of how to use the mixins:
+# Examples of how to use the mixins:
 # class MenuListView(PermissionMixin, ListAPIView):
 #     required_permission = "menus.view_menu"
 #     # Unverified customers can see if they have this permission
