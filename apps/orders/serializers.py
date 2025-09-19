@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from django.db import transaction
 from django.db.models import Sum
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.common.constants import OrderStatus
@@ -74,11 +75,29 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         items = self.initial_data.get("items", [])
         total_amount = Decimal("0.00")
 
+        menu = attrs.get("menu")
+        reservation_time = attrs.get("reservation_time")
+        if not menu:
+            raise serializers.ValidationError({"menu": "Menu must be specified."})
+
+        if menu.start_time <= timezone.now():
+            raise serializers.ValidationError({"menu": "Cannot create orders for menus that have already started."})
+
+        if not (menu.start_time <= reservation_time <= menu.end_time):
+            raise serializers.ValidationError(
+                {"reservation_time": "Reservation time must be between the menu's start and end times."}
+            )
+
         for item in items:
             try:
                 menu_item = MenuItem.objects.get(pk=item["menu_item_id"])
             except MenuItem.DoesNotExist as e:
-                raise serializers.ValidationError(f"Menu item {item['menu_item_id']} does not exist") from e
+                raise serializers.ValidationError({"items": f"Menu item {item['menu_item_id']} does not exist"}) from e
+
+            if menu_item.menu_id != menu.id:
+                raise serializers.ValidationError(
+                    {"items": f"Menu item {menu_item.item.name} does not belong to menu {menu.name}."}
+                )
 
             qty = int(item["quantity"])
             unit_price = menu_item.override_price or menu_item.item.base_price
@@ -138,5 +157,31 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         user.balance.on_hold += total_amount
         user.balance.save()
 
-
         return order
+
+
+class OrderItemListSerializer(serializers.ModelSerializer):
+    item_name = serializers.CharField(source="menu_item.item.name", read_only=True)
+
+    class Meta:
+        model = OrderItem
+        fields = ["item_name", "quantity"]
+
+
+class OrderListSerializer(serializers.ModelSerializer):
+    menu = serializers.CharField(source="menu.name", read_only=True)
+    items = OrderItemListSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Order
+        fields = [
+            "id",
+            "menu",
+            "items",
+            "is_active",
+            "order_no",
+            "status",
+            "total_amount",
+            "reservation_time",
+            "user",
+        ]
