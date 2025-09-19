@@ -26,20 +26,20 @@ class TransactionPublicSerializer(serializers.ModelSerializer):
     """Customer-facing transaction record."""
 
     signed_amount = serializers.SerializerMethodField()
-    label = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
     order_no = serializers.CharField(source="order.order_no", read_only=True)
 
     class Meta:
         model = Transaction
         fields = [
-            "id",
-            "type",
-            "signed_amount",
-            "label",
-            "amount",
-            "remaining_balance",
-            "order_no",
-            "created_at",
+            "id",  # Transaction ID
+            "type",  # deposit/payment/refund
+            "amount",  # Raw amount value
+            "signed_amount",  # Amount with +/-
+            "status",  # Transaction status
+            "order_no",  # Order reference when available
+            "remaining_balance",  # Balance after transaction
+            "created_at",  # Transaction timestamp
         ]
         read_only_fields = fields
 
@@ -48,14 +48,16 @@ class TransactionPublicSerializer(serializers.ModelSerializer):
             return -obj.amount
         return obj.amount
 
-    def get_label(self, obj):
+    def get_status(self, obj):
+        """Simple status logic"""
         if obj.type == TransactionType.DEPOSIT:
-            return "Cash Deposit"
-        if obj.type == TransactionType.PAYMENT:
-            return f"Payment for order {getattr(obj.order, 'order_no', '-')}"
-        if obj.type == TransactionType.REFUND:
-            return f"Refund for order {getattr(obj.order, 'order_no', '-')}"
-        return obj.type
+            return "completed"
+        elif obj.type in [TransactionType.PAYMENT, TransactionType.REFUND]:
+            if obj.order:
+                return obj.order.status.lower()
+            else:
+                return "error"
+        return "completed"
 
 
 class DepositSerializer(serializers.ModelSerializer):

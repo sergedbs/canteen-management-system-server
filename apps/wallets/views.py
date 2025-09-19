@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -14,9 +15,22 @@ from apps.wallets.serializers import (
 
 
 # Wallet
+@extend_schema(
+    summary="Get user wallet balance",
+    description="Get current wallet balance, on-hold amount, and available balance for the main wallet.",
+    parameters=[
+        OpenApiParameter(
+            name="user_id",
+            description="User ID to get wallet balance for",
+            required=True,
+            type=str,
+            location=OpenApiParameter.PATH,
+        )
+    ],
+    responses={200: BalanceSerializer},
+    tags=["Wallets"],
+)
 class WalletView(VerifiedOwnerMixin, generics.RetrieveAPIView):
-    """Get a user's wallet balance. Users can only see their own balance, staff can see any balance."""
-
     serializer_class = BalanceSerializer
     required_permission = "wallets.view_balance"
     lookup_url_kwarg = "user_id"
@@ -28,9 +42,23 @@ class WalletView(VerifiedOwnerMixin, generics.RetrieveAPIView):
         return balance
 
 
+@extend_schema(
+    summary="Deposit money into wallet",
+    description="Staff deposits cash into a user's wallet. Creates a deposit transaction and updates the balance.",
+    parameters=[
+        OpenApiParameter(
+            name="user_id",
+            description="User ID to deposit money into",
+            required=True,
+            type=str,
+            location=OpenApiParameter.PATH,
+        )
+    ],
+    request=DepositSerializer,
+    responses={201: DepositSerializer},
+    tags=["Wallets"],
+)
 class WalletDepositView(PermissionMixin, generics.CreateAPIView):
-    """Staff deposits cash into a user's wallet. Only staff with credit_balance permission can do this."""
-
     serializer_class = DepositSerializer
     required_permission = "wallets.credit_balance"
 
@@ -41,8 +69,6 @@ class WalletDepositView(PermissionMixin, generics.CreateAPIView):
 
 
 class WalletWithdrawView(PermissionMixin, APIView):
-    """Withdraw funds from a user's wallet. Currently not implemented."""
-
     required_permission = "wallets.debit_balance"
 
     def post(self, request, user_id):
@@ -50,6 +76,28 @@ class WalletWithdrawView(PermissionMixin, APIView):
 
 
 # Wallet Transactions
+@extend_schema(
+    summary="Get transaction history",
+    description="Get list: returns transaction history with ID, type, amount, status, order reference, and timestamps.",
+    parameters=[
+        OpenApiParameter(
+            name="user_id",
+            description="User ID to get transaction history for",
+            required=True,
+            type=str,
+            location=OpenApiParameter.PATH,
+        ),
+        OpenApiParameter(
+            name="page",
+            description="Page number for pagination",
+            required=False,
+            type=int,
+            location=OpenApiParameter.QUERY,
+        ),
+    ],
+    responses={200: TransactionPublicSerializer(many=True)},
+    tags=["Wallets"],
+)
 class WalletTransactionListView(VerifiedOwnerMixin, generics.ListAPIView):
     serializer_class = TransactionPublicSerializer
     required_permission = "wallets.view_transaction"
@@ -59,20 +107,41 @@ class WalletTransactionListView(VerifiedOwnerMixin, generics.ListAPIView):
         user = get_object_or_404(User, id=user_id)
         try:
             balance = Balance.objects.get(user=user)
-            return Transaction.objects.filter(balance=balance)
+            return Transaction.objects.filter(balance=balance).select_related("order")
         except Balance.DoesNotExist:
             return Transaction.objects.none()
 
 
+@extend_schema(
+    summary="Get single transaction details",
+    description="Get detailed information about a specific transaction",
+    parameters=[
+        OpenApiParameter(
+            name="user_id", description="User ID", required=True, type=str, location=OpenApiParameter.PATH
+        ),
+        OpenApiParameter(
+            name="pk", description="Transaction ID", required=True, type=int, location=OpenApiParameter.PATH
+        ),
+    ],
+    responses={200: TransactionPublicSerializer},
+    tags=["Wallets"],
+)
 class WalletTransactionDetailView(VerifiedOwnerMixin, generics.RetrieveAPIView):
     serializer_class = TransactionPublicSerializer
     required_permission = "wallets.view_transaction"
 
-    def get_queryset(self):
+    def get_object(self):
         user_id = self.kwargs.get("user_id")
+        transaction_id = self.kwargs.get("pk")
+
         user = get_object_or_404(User, id=user_id)
         try:
             balance = Balance.objects.get(user=user)
-            return Transaction.objects.filter(balance=balance)
-        except Balance.DoesNotExist:
-            return Transaction.objects.none()
+            transaction = get_object_or_404(
+                Transaction.objects.select_related("order"), balance=balance, id=transaction_id
+            )
+            return transaction
+        except Balance.DoesNotExist as err:
+            from django.http import Http404
+
+            raise Http404("User has no wallet balance") from err
