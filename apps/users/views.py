@@ -13,33 +13,33 @@ class UsersView(APIView):
 
 
 class UserDetailView(APIView):
-    def get(self, request, id):
+    def get(self, request, user_id):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
-    def patch(self, request, id):
+    def patch(self, request, user_id):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
-    def delete(self, request, id):
+    def delete(self, request, user_id):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 class UserPasswordAdminView(APIView):
-    def patch(self, request, id):
+    def patch(self, request, user_id):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 class UserBalanceView(APIView):
-    def get(self, request, id):
+    def get(self, request, user_id):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 class UserOrdersView(APIView):
-    def get(self, request, id):
+    def get(self, request, user_id):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 class UserTransactionsView(APIView):
-    def get(self, request, id):
+    def get(self, request, user_id):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
