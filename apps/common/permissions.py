@@ -1,6 +1,7 @@
 from django.contrib.auth.models import Group, Permission
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
+from rest_framework.permissions import BasePermission
 
 ROLE_PERMISSIONS = {
     "admin": [
@@ -108,3 +109,9 @@ def create_default_groups(sender, **kwargs):
             print(f"Created group '{role}' with permissions")
         else:
             print(f"Updated group '{role}' with permissions")
+
+
+class IsOwnerOrAdmin(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return request.user.is_staff or obj.user == request.user
+

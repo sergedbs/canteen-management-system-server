@@ -1,6 +1,12 @@
+from django.contrib.auth import get_user_model
 from rest_framework import status
+from rest_framework.generics import RetrieveAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from .serializers import UserSerializer
+
+User = get_user_model()
 
 
 # Admin / Staff
@@ -12,14 +18,15 @@ class UsersView(APIView):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
-class UserDetailView(APIView):
-    def get(self, request, user_id):
+class UserDetailView(RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    lookup_field = "id"
+
+    def patch(self, request, *args, **kwargs):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
-    def patch(self, request, user_id):
-        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
-
-    def delete(self, request, user_id):
+    def delete(self, request, *args, **kwargs):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
@@ -49,11 +56,13 @@ class UserByAccountNoView(APIView):
 
 
 # Self Profile (aliases)
-class MeView(APIView):
-    def get(self, request):
-        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+class MeView(RetrieveAPIView):
+    serializer_class = UserSerializer
 
-    def patch(self, request):
+    def get_object(self):
+        return self.request.user
+
+    def patch(self, request, *args, **kwargs):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
