@@ -1,10 +1,8 @@
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
-from rest_framework import generics, status
-from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework import generics
 
-from apps.common.mixins import PermissionMixin, VerifiedCustomerMixin, VerifiedOwnerMixin
+from apps.common.mixins import PermissionMixin, VerifiedCustomerMixin
 from apps.users.models import User
 from apps.wallets.models import Balance, Transaction
 from apps.wallets.serializers import (
@@ -21,7 +19,7 @@ class _MeMixin(VerifiedCustomerMixin):
 
 # Wallet
 @extend_schema(
-    summary="Get user wallet balance",
+    summary="Staff: Get user wallet balance",
     description="Get current wallet balance, on-hold amount, and available balance for the main wallet.",
     parameters=[
         OpenApiParameter(
@@ -33,11 +31,11 @@ class _MeMixin(VerifiedCustomerMixin):
         )
     ],
     responses={200: BalanceSerializer},
-    tags=["Wallets"],
+    tags=["wallets"],
 )
-class WalletView(VerifiedOwnerMixin, generics.RetrieveAPIView):
+class WalletView(PermissionMixin, generics.RetrieveAPIView):
     serializer_class = BalanceSerializer
-    required_permission = "wallets.view_balance"
+    required_permission = "wallets.view_all_balances"
     lookup_url_kwarg = "user_id"
 
     def get_object(self):
@@ -48,7 +46,7 @@ class WalletView(VerifiedOwnerMixin, generics.RetrieveAPIView):
 
 
 @extend_schema(
-    summary="Deposit money into wallet",
+    summary="Staff: Deposit money into wallet",
     description="Staff deposits cash into a user's wallet. Creates a deposit transaction and updates the balance.",
     parameters=[
         OpenApiParameter(
@@ -61,7 +59,7 @@ class WalletView(VerifiedOwnerMixin, generics.RetrieveAPIView):
     ],
     request=DepositSerializer,
     responses={201: DepositSerializer},
-    tags=["Wallets"],
+    tags=["wallets"],
 )
 class WalletDepositView(PermissionMixin, generics.CreateAPIView):
     serializer_class = DepositSerializer
@@ -73,16 +71,9 @@ class WalletDepositView(PermissionMixin, generics.CreateAPIView):
         serializer.save(target_user=target_user)
 
 
-class WalletWithdrawView(PermissionMixin, APIView):
-    required_permission = "wallets.debit_balance"
-
-    def post(self, request, user_id):
-        return Response({"detail": "Withdraw functionality not implemented"}, status=status.HTTP_501_NOT_IMPLEMENTED)
-
-
 # Wallet Transactions
 @extend_schema(
-    summary="Get transaction history",
+    summary="Staff: Get transaction history",
     description="Get list: returns transaction history with ID, type, amount, status, order reference, and timestamps.",
     parameters=[
         OpenApiParameter(
@@ -101,11 +92,11 @@ class WalletWithdrawView(PermissionMixin, APIView):
         ),
     ],
     responses={200: TransactionPublicSerializer(many=True)},
-    tags=["Wallets"],
+    tags=["wallets"],
 )
-class WalletTransactionListView(VerifiedOwnerMixin, generics.ListAPIView):
+class WalletTransactionListView(PermissionMixin, generics.ListAPIView):
     serializer_class = TransactionPublicSerializer
-    required_permission = "wallets.view_transaction"
+    required_permission = "wallets.view_all_transactions"
 
     def get_queryset(self):
         user_id = self.kwargs.get("user_id")
@@ -118,22 +109,14 @@ class WalletTransactionListView(VerifiedOwnerMixin, generics.ListAPIView):
 
 
 @extend_schema(
-    summary="Get single transaction details",
+    summary="Staff: Get single transaction details",
     description="Get detailed information about a specific transaction",
-    parameters=[
-        OpenApiParameter(
-            name="user_id", description="User ID", required=True, type=str, location=OpenApiParameter.PATH
-        ),
-        OpenApiParameter(
-            name="pk", description="Transaction ID", required=True, type=int, location=OpenApiParameter.PATH
-        ),
-    ],
     responses={200: TransactionPublicSerializer},
-    tags=["Wallets"],
+    tags=["wallets"],
 )
-class WalletTransactionDetailView(VerifiedOwnerMixin, generics.RetrieveAPIView):
+class WalletTransactionDetailView(PermissionMixin, generics.RetrieveAPIView):
     serializer_class = TransactionPublicSerializer
-    required_permission = "wallets.view_transaction"
+    required_permission = "wallets.view_all_transactions"
 
     def get_object(self):
         user_id = self.kwargs.get("user_id")
@@ -153,23 +136,23 @@ class WalletTransactionDetailView(VerifiedOwnerMixin, generics.RetrieveAPIView):
 
 
 @extend_schema(
-    summary="Get my wallet balance",
+    summary="Customer: Get my wallet balance",
     description="Returns the authenticated & verified customer's wallet snapshot: current balance, on-hold,available.",
     operation_id="wallet_me_balance_retrieve",
     parameters=[],
     responses={200: BalanceSerializer},
-    tags=["Wallets"],
+    tags=["wallets"],
 )
 class WalletDetailMeView(_MeMixin, generics.RetrieveAPIView):
     serializer_class = BalanceSerializer
-    required_permission = "wallets.view_balance"
+    required_permission = "wallets.view_own_balance"
     lookup_url_kwarg = None
 
     def get(self, request, *args, **kwargs):
-        self._bind_me(request)
         return super().get(request, *args, **kwargs)
 
     def get_object(self):
+        self._bind_me(self.request)
         user_id = self.kwargs.get("user_id")
         user = get_object_or_404(User, id=user_id)
         balance, _ = Balance.objects.get_or_create(user=user)
@@ -177,7 +160,7 @@ class WalletDetailMeView(_MeMixin, generics.RetrieveAPIView):
 
 
 @extend_schema(
-    summary="Get my wallet transactions",
+    summary="Customer: Get my wallet transactions",
     description="Paginated list of the authenticated & verified customer's transactions.",
     operation_id="wallet_me_transactions_list",
     parameters=[
@@ -190,7 +173,7 @@ class WalletDetailMeView(_MeMixin, generics.RetrieveAPIView):
         ),
     ],
     responses={200: TransactionPublicSerializer(many=True)},
-    tags=["Wallets"],
+    tags=["wallets"],
     examples=[
         OpenApiExample(
             "Transaction item",
@@ -200,14 +183,14 @@ class WalletDetailMeView(_MeMixin, generics.RetrieveAPIView):
 )
 class WalletTransactionsMeView(_MeMixin, generics.ListAPIView):
     serializer_class = TransactionPublicSerializer
-    required_permission = "wallets.view_transaction"
+    required_permission = "wallets.view_own_transaction"
     lookup_url_kwarg = None
 
     def get(self, request, *args, **kwargs):
-        self._bind_me(request)
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
+        self._bind_me(self.request)
         user_id = self.kwargs.get("user_id")
         user = get_object_or_404(User, id=user_id)
         try:
@@ -218,29 +201,29 @@ class WalletTransactionsMeView(_MeMixin, generics.ListAPIView):
 
 
 @extend_schema(
-    summary="Get my transaction details",
+    summary="Customer: Get my transaction details",
     description="Details for a specific transaction belonging to the authenticated & verified customer.",
     operation_id="wallet_me_transaction_retrieve",
     parameters=[
         OpenApiParameter(
-            name="pk", description="Transaction ID", required=True, type=int, location=OpenApiParameter.PATH
+            name="id", description="Transaction ID", required=True, type=str, location=OpenApiParameter.PATH
         ),
     ],
     responses={200: TransactionPublicSerializer},
-    tags=["Wallets"],
+    tags=["wallets"],
 )
 class WalletTransactionDetailMeView(_MeMixin, generics.RetrieveAPIView):
     serializer_class = TransactionPublicSerializer
-    required_permission = "wallets.view_transaction"
+    required_permission = "wallets.view_own_transaction"
     lookup_url_kwarg = None
 
     def get(self, request, *args, **kwargs):
-        self._bind_me(request)
         return super().get(request, *args, **kwargs)
 
     def get_object(self):
+        self._bind_me(self.request)
         user_id = self.kwargs.get("user_id")
-        transaction_id = self.kwargs.get("pk")
+        transaction_id = self.kwargs.get("id")
 
         user = get_object_or_404(User, id=user_id)
         try:

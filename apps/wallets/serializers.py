@@ -111,22 +111,21 @@ class BaseOrderTransactionSerializer(serializers.ModelSerializer):
         order_id = attrs.get("order_id")
         order_no = attrs.get("order_no")
 
+        # Require exactly one parameter (not both, not none)
         if not order_id and not order_no:
-            raise serializers.ValidationError("Provide either 'order_id' or 'order_no'.")
+            raise serializers.ValidationError("Provide either 'order_id' or 'order_no' (not both).")
 
+        if order_id and order_no:
+            raise serializers.ValidationError("Provide either 'order_id' or 'order_no' (not both).")
+
+        # Find the order
         qs = self.get_order_queryset()
         try:
-            if order_id and order_no:
-                order = qs.get(id=order_id)
-                if order.order_no != order_no:
-                    raise serializers.ValidationError("order_id and order_no refer to different orders.")
-            elif order_id:
-                order = qs.get(id=order_id)
-            else:
-                order = qs.get(order_no=order_no)
+            order = qs.get(id=order_id) if order_id else qs.get(order_no=order_no)
         except Order.DoesNotExist as err:
             raise serializers.ValidationError("Order not found.") from err
 
+        attrs["order"] = order
         return attrs
 
 
