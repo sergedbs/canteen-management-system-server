@@ -9,6 +9,7 @@ from rest_framework import serializers
 from apps.common.constants import OrderStatus
 from apps.menus.models import Menu, MenuItem
 from apps.orders.models import Order, OrderItem
+from apps.wallets.services import WalletError, cancel_order_with_hold_release, place_hold
 
 
 class OrderItemCreateSerializer(serializers.Serializer):
@@ -135,8 +136,25 @@ class OrderCreateSerializer(serializers.ModelSerializer):
 
         order.total_amount = total_amount
         order.save()
-        user.balance.on_hold += total_amount
-        user.balance.save()
 
+        try:
+            place_hold(user=user, order_id=order.id)
+        except WalletError as err:
+            raise serializers.ValidationError(f"Insufficient funds: {err}") from err
 
         return order
+
+
+class OrderCancelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = ["id", "order_no", "status", "total_amount"]
+        read_only_fields = ["id", "order_no", "status", "total_amount"]
+
+    def update(self, instance, validated_data):
+        user = self.context["request"].user
+        try:
+            result = cancel_order_with_hold_release(user=user, order_id=instance.id)
+            return result.order
+        except WalletError as err:
+            raise serializers.ValidationError(str(err)) from err

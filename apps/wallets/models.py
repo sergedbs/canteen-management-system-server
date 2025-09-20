@@ -23,6 +23,8 @@ class Balance(BaseModel):
         permissions = [
             ("credit_balance", "Can credit a user's balance"),
             ("debit_balance", "Can debit a user's balance"),
+            ("view_all_balances", "Can view all user balances"),
+            ("view_own_balance", "Can view own balance"),
         ]
 
     def __str__(self):
@@ -58,6 +60,7 @@ class Transaction(BaseModel):
         permissions = [
             ("refund_payment", "Can create a refund for a payment"),
             ("view_all_transactions", "Can view all transactions"),
+            ("view_own_transaction", "Can view own transactions"),
         ]
 
         constraints = [
