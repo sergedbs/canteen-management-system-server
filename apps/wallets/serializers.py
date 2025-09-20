@@ -9,8 +9,6 @@ from apps.wallets.services import WalletError, capture_payment_by_staff, deposit
 
 
 class BalanceSerializer(serializers.ModelSerializer):
-    """Read-only snapshot of a user's wallet."""
-
     available_balance = serializers.SerializerMethodField()
 
     class Meta:
@@ -23,8 +21,6 @@ class BalanceSerializer(serializers.ModelSerializer):
 
 
 class TransactionPublicSerializer(serializers.ModelSerializer):
-    """Customer-facing transaction record."""
-
     signed_amount = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     order_no = serializers.CharField(source="order.order_no", read_only=True)
@@ -49,7 +45,6 @@ class TransactionPublicSerializer(serializers.ModelSerializer):
         return obj.amount
 
     def get_status(self, obj):
-        """Simple status logic"""
         if obj.type == TransactionType.DEPOSIT:
             return "completed"
         elif obj.type in [TransactionType.PAYMENT, TransactionType.REFUND]:
@@ -61,8 +56,6 @@ class TransactionPublicSerializer(serializers.ModelSerializer):
 
 
 class DepositSerializer(serializers.ModelSerializer):
-    """Staff takes cash and deposits it into the user's wallet."""
-
     amount = serializers.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -95,8 +88,6 @@ class DepositSerializer(serializers.ModelSerializer):
 
 
 class BaseOrderTransactionSerializer(serializers.ModelSerializer):
-    """Model serializer that accepts either order_id or order_no"""
-
     order_id = serializers.UUIDField(write_only=True, required=False)
     order_no = serializers.CharField(write_only=True, required=False)
 
@@ -140,8 +131,6 @@ class BaseOrderTransactionSerializer(serializers.ModelSerializer):
 
 
 class CapturePaymentSerializer(BaseOrderTransactionSerializer):
-    """Staff confirms pickup: capture from held funds. Creates a PAYMENT transaction."""
-
     def create(self, validated_data):
         user = self.context["request"].user
         order = validated_data["order"]
@@ -153,8 +142,6 @@ class CapturePaymentSerializer(BaseOrderTransactionSerializer):
 
 
 class RefundPaymentSerializer(BaseOrderTransactionSerializer):
-    """Staff refunds a paid/completed order. Creates a REFUND transaction."""
-
     def create(self, validated_data):
         user = self.context["request"].user
         order = validated_data["order"]

@@ -1,9 +1,11 @@
 from dataclasses import dataclass
+from datetime import timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import F
+from django.utils import timezone
 
 from apps.common.constants import OrderStatus, TransactionType
 from apps.orders.models import Order
@@ -112,11 +114,11 @@ def capture_payment_by_staff(user, order_id) -> WalletResult:
             current_balance=F("current_balance") - amount,
         )
     else:
-        if balance.current_balance < amount:
-            raise WalletError("Insufficient funds for this order.")
-        Balance.objects.filter(pk=balance.pk).update(
-            current_balance=F("current_balance") - amount,
-        )
+        # if balance.current_balance < amount:
+        #     raise WalletError("Insufficient funds for this order.")
+        # Balance.objects.filter(pk=balance.pk).update(
+        #     current_balance=F("current_balance") - amount,
+        raise WalletError("Cannot capture a PENDING order without a hold.")
 
     balance.refresh_from_db(fields=["current_balance", "on_hold"])
 
@@ -175,6 +177,7 @@ def cancel_order_with_hold_release(user, order_id) -> WalletResult:
     - order -> CANCELLED
     - No transaction record needed
     """
+
     order = _get_locked_order(order_id)
 
     if order.user_id != user.id:
@@ -183,10 +186,21 @@ def cancel_order_with_hold_release(user, order_id) -> WalletResult:
     if order.status not in (OrderStatus.PENDING, OrderStatus.PREPARING):
         raise WalletError("Order cannot be cancelled in its current state.")
 
+    # Cancel deadline is 15 minutes before menu starts (when kitchen begins prep)
+    now = timezone.now()
+    menu_prep_deadline = order.menu.start_time - timedelta(minutes=15)
+
+    if now > menu_prep_deadline:
+        raise WalletError(
+            f"Cannot cancel order. Cancellation deadline has passed. "
+            f"Orders must be cancelled at least 15 minutes before the menu starts "
+            f"(deadline was {menu_prep_deadline.strftime('%H:%M on %b %d')})."
+        )
+
     balance = _get_locked_balance_for_user(order.user)
     amount = _quantize(order.total_amount)
 
-    if order.status == OrderStatus.PREPARING:
+    if order.status in (OrderStatus.PENDING, OrderStatus.PREPARING):
         if balance.on_hold < amount:
             raise WalletError("Insufficient held funds for this order.")
 
