@@ -38,96 +38,67 @@ class OrderProcessView(APIView):
 
 
 @extend_schema(
-    summary="Capture payment for order",
-    description="Staff confirms customer pickup and captures payment.",
+    summary="Staff: Capture payment for order",
+    description="Staff confirms customer pickup and captures payment: either order_id (UUID) or order_no.",
     operation_id="order_capture_payment",
-    parameters=[
-        OpenApiParameter(
-            name="orderId",
-            description="Order ID to capture payment for",
-            required=True,
-            type=str,
-            location=OpenApiParameter.PATH,
-        ),
-    ],
     request=CapturePaymentSerializer,
     responses={201: CapturePaymentSerializer},
-    tags=["Orders", "Staff Operations"],
+    tags=["orders"],
 )
 class CapturePaymentView(PermissionMixin, generics.CreateAPIView):
     serializer_class = CapturePaymentSerializer
     required_permission = "wallets.debit_balance"
 
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        order_id = self.kwargs.get("orderId")
-        order = get_object_or_404(Order, id=order_id)
-        context["order"] = order
-        return context
-
-    def perform_create(self, serializer):
-        order_id = self.kwargs.get("orderId")
-        order = get_object_or_404(Order, id=order_id)
-        serializer.save(order=order)
-
 
 @extend_schema(
-    summary="Refund order payment",
-    description="Adds money back to customer balance, creates REFUND transaction, and cancels the order.",
+    summary="Staff: Refund order payment",
+    description="Staff processes refund for a paid order.",
     operation_id="order_refund_payment",
-    parameters=[
-        OpenApiParameter(
-            name="orderId",
-            description="Order ID to process refund for",
-            required=True,
-            type=str,
-            location=OpenApiParameter.PATH,
-        ),
-    ],
     request=RefundPaymentSerializer,
     responses={201: RefundPaymentSerializer},
-    tags=["Orders", "Staff Operations"],
+    tags=["orders"],
 )
 class RefundPaymentView(PermissionMixin, generics.CreateAPIView):
     serializer_class = RefundPaymentSerializer
     required_permission = "wallets.refund_payment"
 
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        order_id = self.kwargs.get("orderId")
-        order = get_object_or_404(Order, id=order_id)
-        context["order"] = order
-        return context
 
-    def perform_create(self, serializer):
-        order_id = self.kwargs.get("orderId")
-        order = get_object_or_404(Order, id=order_id)
-        serializer.save(order=order)
-
-
-@extend_schema(
-    summary="Cancel my order",
-    description="Can only cancel PENDING or PREPARING orders (15 minutes before menu starts).",
-    operation_id="order_me_cancel",
-    parameters=[
-        OpenApiParameter(
-            name="orderId", description="Order ID to cancel", required=True, type=str, location=OpenApiParameter.PATH
-        ),
-    ],
-    responses={200: OrderCancelSerializer},
-    tags=["Orders"],
-)
 class OrderCancelMeView(_MeMixin, generics.UpdateAPIView):
     serializer_class = OrderCancelSerializer
     required_permission = "orders.change_order"
-    lookup_url_kwarg = "orderId"
+    lookup_url_kwarg = "order_id"
 
     def get_object(self):
-        order_id = self.kwargs.get("orderId")
+        order_id = self.kwargs.get("order_id")
         return get_object_or_404(Order, id=order_id, user=self.request.user)
 
-    def update(self, request, *args, **kwargs):
+    @extend_schema(exclude=True)
+    def put(self, request, *args, **kwargs):
+        """Disable PUT method - use PATCH for partial updates only."""
+        return Response(
+            {"detail": "Use PATCH method for cancelling orders."}, status=status.HTTP_405_METHOD_NOT_ALLOWED
+        )
+
+    @extend_schema(
+        summary="Customer: Cancel my order",
+        description="Can only cancel PENDING/PREPARING orders; must be at least 15 minutes before the menu starts.",
+        operation_id="order_me_cancel",
+        parameters=[
+            OpenApiParameter(
+                name="order_id",
+                description="Order ID to cancel",
+                required=True,
+                type=str,
+                location=OpenApiParameter.PATH,
+            ),
+        ],
+        responses={
+            200: OrderCancelSerializer,
+        },
+        tags=["orders"],
+    )
+    def patch(self, request, *args, **kwargs):
         try:
-            return super().update(request, *args, **kwargs)
+            return self.partial_update(request, *args, **kwargs)
         except (ValidationError, ValueError) as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
