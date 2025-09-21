@@ -49,8 +49,9 @@ ROLE_PERMISSIONS = {
         ("wallets", "change_transaction"),
         ("wallets", "view_transaction"),
         ("wallets", "delete_transaction"),
-        ("wallets", "refund_payment"),
+        ("wallets", "view_all_balances"),
         ("wallets", "view_all_transactions"),
+        ("wallets", "refund_payment"),
     ],
     "customer_verified": [
         # The verified customer will have privileges regarding the following areas:
@@ -68,9 +69,9 @@ ROLE_PERMISSIONS = {
         ("orders", "change_orderitem"),
         ("orders", "view_orderitem"),
         ("orders", "delete_orderitem"),
-        # 3. Wallets App - can view their own balance and transactions
-        ("wallets", "view_balance"),
-        ("wallets", "view_transaction"),
+        # 3. Wallets App - can view their own balance and transactions only
+        ("wallets", "view_own_balance"),
+        ("wallets", "view_own_transaction"),
     ],
     "customer_unverified": [
         # The unverified customer has very limited privileges
