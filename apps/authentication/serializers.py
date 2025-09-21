@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model, password_validation
 from rest_framework import serializers
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.exceptions import InvalidToken
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 
 from apps.users.utils import extract_name_from_email
 
@@ -14,6 +15,17 @@ class TokenWithRoleObtainPairSerializer(TokenObtainPairSerializer):
         token["role"] = user.role
 
         return token
+
+
+class CookieTokenRefreshSerializer(TokenRefreshSerializer):
+    refresh = None
+
+    def validate(self, attrs):
+        attrs["refresh"] = self.context["request"].COOKIES.get("refresh_token")
+        if attrs["refresh"]:
+            return super().validate(attrs)
+        else:
+            raise InvalidToken("No valid token found in cookie 'refresh_token'")
 
 
 class RegisterSerializer(serializers.ModelSerializer):
