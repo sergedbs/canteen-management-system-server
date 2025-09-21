@@ -3,12 +3,13 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import CreateAPIView
+from rest_framework.generics import ListCreateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.common.mixins import PermissionMixin, VerifiedCustomerMixin
 from apps.orders.models import Order
-from apps.orders.serializers import OrderCancelSerializer, OrderCreateSerializer
+from apps.orders.serializers import OrderCancelSerializer, OrderCreateSerializer, OrderListSerializer
 from apps.wallets.serializers import CapturePaymentSerializer, RefundPaymentSerializer
 
 
@@ -16,10 +17,20 @@ class _MeMixin(VerifiedCustomerMixin):
     def _bind_me(self, request):
         pass
 
-
-class OrderCreateView(CreateAPIView):
+      
+class OrderCreateView(ListCreateAPIView):
     queryset = Order.objects.all()
-    serializer_class = OrderCreateSerializer
+
+    def get_queryset(self):
+        qs = Order.objects.select_related("menu").prefetch_related("items__menu_item__item")
+        if self.request.method == "POST" or self.request.user.is_staff:
+            return qs.all()
+        return qs.filter(user=self.request.user).order_by("-reservation_time")
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return OrderCreateSerializer
+        return OrderListSerializer
 
 
 class OrderByIdView(APIView):
