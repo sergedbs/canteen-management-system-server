@@ -133,6 +133,16 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "apps.common.throttling.UnverifiedUserThrottle",
+        "apps.common.throttling.VerifiedUserThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "25/day",
+        "unverified": "20/hour",
+        "verified": "100/hour",
+    },
 }
 
 SPECTACULAR_SETTINGS = {
@@ -165,7 +175,6 @@ UNFOLD = {
         },
     },
 }
-
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
