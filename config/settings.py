@@ -100,9 +100,25 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://localhost:8080",
+    "https://localhost",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
+CSRF_ALLOWED_ORIGINS = [
+    "https://localhost",
+    "https://127.0.0.1",
+    "http://localhost",
+    "http://127.0.0.1",
+]
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = False
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+
+# if needed in dev
+# CSRF_COOKIE_SECURE = False
+# SESSION_COOKIE_SECURE = False
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
@@ -152,6 +168,7 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "SERVERS": [
         {"url": "http://localhost:8000", "description": "Development server"},
+        {"url": "https://localhost", "description": "Secure development server"},
     ],
 }
 
@@ -223,6 +240,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
