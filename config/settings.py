@@ -139,7 +139,7 @@ REST_FRAMEWORK = {
         "apps.common.throttling.VerifiedUserThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "25/day",
+        "anon": "5/hour",
         "unverified": "20/hour",
         "verified": "100/hour",
     },
