@@ -8,7 +8,7 @@ from .models import User
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     model = User
-    list_display = ("email", "first_name", "last_name", "is_staff", "role", "is_verified")
+    list_display = ("email", "first_name", "last_name", "is_staff", "role", "is_verified", "mfa_enabled", "mfa_type")
     ordering = ("email",)
     search_fields = ("email", "first_name", "last_name")
     filter_horizontal = ("groups",)
@@ -16,7 +16,7 @@ class UserAdmin(BaseUserAdmin):
     readonly_fields = ("last_login", "all_permissions")
 
     fieldsets = (
-        (None, {"fields": ("email", "password")}),
+        (None, {"fields": ("email", "password", "mfa_enabled", "mfa_type")}),
         ("Personal info", {"fields": ("first_name", "last_name")}),
         ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser", "groups")}),
         ("Role & Verification", {"fields": ("role", "is_verified")}),

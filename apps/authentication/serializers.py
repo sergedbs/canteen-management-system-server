@@ -12,8 +12,24 @@ class TokenWithRoleObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
         token["role"] = user.role
+        token["mfa_enabled"] = user.mfa_enabled
 
         return token
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        user = self.user
+
+        # If MFA is enabled, don't return tokens immediately
+        if user.mfa_enabled:
+            return {
+                "mfa_required": True,
+                "email": user.email,
+                "mfa_type": user.mfa_type,
+                "message": "MFA verification required",
+            }
+
+        return data
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -52,3 +68,20 @@ class RegisterSerializer(serializers.ModelSerializer):
         data["refresh"] = str(refresh)
         data["access"] = str(refresh.access_token)
         return data
+
+
+class MFASetupSerializer(serializers.Serializer):
+    mfa_type = serializers.ChoiceField(choices=[("email", "Email"), ("totp", "Authenticator")])
+
+
+class MFARequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class MFAVerifySerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField(max_length=10)  # Support both 6-digit OTP and backup codes
+
+
+class MFADisableSerializer(serializers.Serializer):
+    password = serializers.CharField()

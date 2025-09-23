@@ -226,12 +226,10 @@ RBAC_FORCE_UPDATE_PERMISSIONS = False
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = env("SMTP_HOST")
 EMAIL_PORT = env("SMTP_PORT")
-EMAIL_HOST_USER = env("SMTP_USER")
-EMAIL_HOST_PASSWORD = env("SMTP_PASS")
 EMAIL_USE_TLS = False
 EMAIL_USE_SSL = False
 DEFAULT_FROM_EMAIL = "no-reply@canteen.utm.md"
 
 # Redis
-REDIS_HOST = env("REDIS_HOST", "localhost")
-REDIS_PORT = env("REDIS_PORT", 6379)
+REDIS_HOST = env("REDIS_HOST", default="localhost")
+REDIS_PORT = env("REDIS_PORT", default=6379, cast=int)
