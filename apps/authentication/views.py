@@ -8,13 +8,12 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from apps.authentication.serializers import (
     MFADisableSerializer,
-    MFARequestSerializer,
     MFASetupSerializer,
     MFAVerifySerializer,
     RegisterSerializer,
     TokenWithRoleObtainPairSerializer,
 )
-from apps.authentication.services import disable_mfa, request_mfa_code, setup_mfa, verify_mfa
+from apps.authentication.services import disable_mfa, setup_mfa, verify_mfa
 
 User = get_user_model()
 
@@ -47,7 +46,7 @@ class TokenWithRoleObtainPairView(TokenObtainPairView):
 
 @extend_schema(
     summary="Setup MFA",
-    description="Setup MFA for the authenticated user. Choose between email or TOTP (authenticator app).",
+    description="Setup MFA for the authenticated user using an authenticator app (TOTP only).",
     request=MFASetupSerializer,
     responses={
         200: {
@@ -68,23 +67,6 @@ class MFASetupView(APIView):
         serializer = MFASetupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = setup_mfa(request.user, serializer.validated_data["mfa_type"])
-        return Response(data)
-
-
-@extend_schema(
-    summary="Request MFA code",
-    description="Request MFA code via email (only for email MFA type).",
-    request=MFARequestSerializer,
-    responses={200: {"type": "object", "properties": {"message": {"type": "string"}}}},
-    tags=["authentication"],
-)
-class MFARequestView(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        serializer = MFARequestSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data = request_mfa_code(serializer.validated_data["email"])
         return Response(data)
 
 

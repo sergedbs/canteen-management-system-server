@@ -71,11 +71,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class MFASetupSerializer(serializers.Serializer):
-    mfa_type = serializers.ChoiceField(choices=[("email", "Email"), ("totp", "Authenticator")])
-
-
-class MFARequestSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    mfa_type = serializers.ChoiceField(choices=[("totp", "Authenticator")])
 
 
 class MFAVerifySerializer(serializers.Serializer):

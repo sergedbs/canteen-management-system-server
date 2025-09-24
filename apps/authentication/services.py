@@ -1,13 +1,10 @@
 import base64
-import random
 import secrets
 from io import BytesIO
 
 import pyotp
 import qrcode
-from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.mail import send_mail
 from rest_framework import exceptions
 
 from apps.authentication.serializers import TokenWithRoleObtainPairSerializer
@@ -30,13 +27,7 @@ def _generate_backup_codes(user):
 
 
 def setup_mfa(user, mfa_type: str) -> dict:
-    if mfa_type == "email":
-        user.mfa_enabled = True
-        user.mfa_type = "email"
-        user.mfa_secret = None
-        user.save()
-        return {"message": "Email MFA enabled successfully", "backup_codes": _generate_backup_codes(user)}
-
+    # Only TOTP is supported
     if mfa_type == "totp":
         secret = pyotp.random_base32()
         user.mfa_secret = secret
@@ -60,29 +51,7 @@ def setup_mfa(user, mfa_type: str) -> dict:
             "backup_codes": _generate_backup_codes(user),
         }
 
-    raise exceptions.ValidationError({"mfa_type": "Unsupported MFA type"})
-
-
-def request_mfa_code(email: str) -> dict:
-    try:
-        user = User.objects.get(email=email)
-    except User.DoesNotExist as err:
-        raise exceptions.NotFound({"error": "User not found"}) from err
-
-    if not user.mfa_enabled or user.mfa_type != "email":
-        raise exceptions.ValidationError({"error": "Email MFA not enabled for this user"})
-
-    otp = str(random.randint(100000, 999999))
-    redis_client.setex(f"mfa_otp:{user.id}", 300, otp)
-
-    send_mail(
-        subject="UTM Canteen - MFA Code",
-        message=f"Your MFA code is: {otp}\n\nThis code will expire in 5 minutes.",
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[user.email],
-        fail_silently=False,
-    )
-    return {"message": "MFA code sent to your email"}
+    raise exceptions.ValidationError({"mfa_type": "Only authenticator (TOTP) MFA is supported"})
 
 
 def verify_mfa(email: str, code: str) -> dict:
@@ -112,18 +81,14 @@ def verify_mfa(email: str, code: str) -> dict:
                 "message": "MFA verified successfully with backup code",
             }
 
-    # Email OTP
-    if user.mfa_type == "email":
-        stored_otp = _to_str(redis_client.get(f"mfa_otp:{user.id}"))
-        if not stored_otp or stored_otp != code:
-            raise exceptions.ValidationError({"error": "Invalid or expired MFA code"})
-        redis_client.delete(f"mfa_otp:{user.id}")
-
-    # TOTP
-    elif user.mfa_type == "totp":
+    # TOTP only
+    if user.mfa_type == "totp":
         totp = pyotp.TOTP(user.mfa_secret)
         if not totp.verify(code, valid_window=1):
             raise exceptions.ValidationError({"error": "Invalid TOTP code"})
+    else:
+        # Any legacy types are no longer supported
+        raise exceptions.ValidationError({"error": "Email-based MFA is no longer supported"})
 
     refresh = TokenWithRoleObtainPairSerializer.get_token(user)
     return {"access": str(refresh.access_token), "refresh": str(refresh), "message": "MFA verified successfully"}
@@ -139,6 +104,5 @@ def disable_mfa(user, password: str) -> dict:
     user.save()
 
     redis_client.delete(f"backup_codes:{user.id}")
-    redis_client.delete(f"mfa_otp:{user.id}")
 
     return {"message": "MFA disabled successfully"}
