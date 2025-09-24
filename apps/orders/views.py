@@ -2,11 +2,12 @@ from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import CreateAPIView
 from rest_framework.generics import ListCreateAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.common.drf_permissions import CustomerVerificationRequired
 from apps.common.mixins import PermissionMixin, VerifiedCustomerMixin
 from apps.orders.models import Order
 from apps.orders.serializers import OrderCancelSerializer, OrderCreateSerializer, OrderListSerializer
@@ -17,7 +18,7 @@ class _MeMixin(VerifiedCustomerMixin):
     def _bind_me(self, request):
         pass
 
-      
+
 class OrderCreateView(ListCreateAPIView):
     queryset = Order.objects.all()
 
@@ -31,6 +32,11 @@ class OrderCreateView(ListCreateAPIView):
         if self.request.method == "POST":
             return OrderCreateSerializer
         return OrderListSerializer
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [CustomerVerificationRequired]
+        return [IsAuthenticated]
 
 
 class OrderByIdView(APIView):
