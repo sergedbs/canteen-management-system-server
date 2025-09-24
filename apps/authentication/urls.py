@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenBlacklistView, TokenRefreshView
 
-from apps.authentication.views import (
+from .views import (
     MFADisableView,
     MFARequestView,
     MFASetupView,
