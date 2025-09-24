@@ -8,16 +8,17 @@ from apps.users.utils import extract_name_from_email
 User = get_user_model()
 
 
-class TokenWithRoleObtainPairSerializer(TokenObtainPairSerializer):
+class LoginSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
         token["role"] = user.role
+        token["verified"] = user.is_verified
 
         return token
 
 
-class CookieTokenRefreshSerializer(TokenRefreshSerializer):
+class RefreshSerializer(TokenRefreshSerializer):
     refresh = None
 
     def validate(self, attrs):
@@ -60,7 +61,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        refresh = TokenWithRoleObtainPairSerializer.get_token(instance)
+        refresh = LoginSerializer.get_token(instance)
         data["refresh"] = str(refresh)
         data["access"] = str(refresh.access_token)
         return data
