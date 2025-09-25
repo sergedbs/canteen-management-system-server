@@ -124,7 +124,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -190,6 +190,107 @@ UNFOLD = {
             "900": "#132062",
             "950": "#0a143d",
         },
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": False,
+        "navigation": [
+            {
+                "title": "Authentication and Authorization",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Users",
+                        "icon": "person",
+                        "link": "/admin/users/user/",
+                    },
+                    {
+                        "title": "Groups",
+                        "icon": "group",
+                        "link": "/admin/auth/group/",
+                    },
+                ],
+            },
+            {
+                "title": "Menus",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Categories",
+                        "icon": "category",
+                        "link": "/admin/menus/category/",
+                    },
+                    {
+                        "title": "Items",
+                        "icon": "restaurant",
+                        "link": "/admin/menus/item/",
+                    },
+                    {
+                        "title": "Menu Items",
+                        "icon": "list_alt",
+                        "link": "/admin/menus/menuitem/",
+                    },
+                    {
+                        "title": "Menus",
+                        "icon": "menu_book",
+                        "link": "/admin/menus/menu/",
+                    },
+                ],
+            },
+            {
+                "title": "Orders",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Order Confirmation",
+                        "icon": "check_circle",
+                        "link": "/admin/orders/confirmation/",
+                    },
+                    {
+                        "title": "All Orders",
+                        "icon": "shopping_cart",
+                        "link": "/admin/orders/order/",
+                    },
+                    {
+                        "title": "Order Items",
+                        "icon": "inventory",
+                        "link": "/admin/orders/orderitem/",
+                    },
+                ],
+            },
+            {
+                "title": "Wallets",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Balances",
+                        "icon": "account_balance_wallet",
+                        "link": "/admin/wallets/balance/",
+                    },
+                    {
+                        "title": "Transactions",
+                        "icon": "receipt",
+                        "link": "/admin/wallets/transaction/",
+                    },
+                ],
+            },
+            {
+                "title": "Token Blacklist",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Outstanding Tokens",
+                        "icon": "token",
+                        "link": "/admin/token_blacklist/outstandingtoken/",
+                    },
+                    {
+                        "title": "Blacklisted Tokens",
+                        "icon": "block",
+                        "link": "/admin/token_blacklist/blacklistedtoken/",
+                    },
+                ],
+            },
+        ],
     },
 }
 
