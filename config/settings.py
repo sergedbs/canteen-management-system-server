@@ -103,6 +103,14 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
+# CSRF_COOKIE_SECURE = not DEBUG
+# CSRF_COOKIE_SAMESITE = "Lax"
+
+# CSRF_TRUSTED_ORIGINS = [
+#     "http://localhost:8000",
+#     "http://localhost:8080",
+# ]
+
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
@@ -204,7 +212,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Europe/Chisinau"
 
 USE_I18N = True
 
