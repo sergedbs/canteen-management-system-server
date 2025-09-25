@@ -22,17 +22,16 @@ class BalanceSerializer(serializers.ModelSerializer):
 
 class TransactionPublicSerializer(serializers.ModelSerializer):
     signed_amount = serializers.SerializerMethodField()
-    status = serializers.SerializerMethodField()
     order_no = serializers.CharField(source="order.order_no", read_only=True)
 
     class Meta:
         model = Transaction
         fields = [
             "id",  # Transaction ID
-            "type",  # deposit/payment/refund
+            "type",  # deposit/payment/refund/hold
             "amount",  # Raw amount value
             "signed_amount",  # Amount with +/-
-            "status",  # Transaction status
+            "status",  # Transaction status (pending/completed/cancelled)
             "order_no",  # Order reference when available
             "remaining_balance",  # Balance after transaction
             "created_at",  # Transaction timestamp
@@ -40,19 +39,9 @@ class TransactionPublicSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_signed_amount(self, obj):
-        if obj.type == TransactionType.PAYMENT:
+        if obj.type in [TransactionType.PAYMENT, TransactionType.HOLD]:
             return -obj.amount
         return obj.amount
-
-    def get_status(self, obj):
-        if obj.type == TransactionType.DEPOSIT:
-            return "completed"
-        elif obj.type in [TransactionType.PAYMENT, TransactionType.REFUND]:
-            if obj.order:
-                return obj.order.status.lower()
-            else:
-                return "error"
-        return "completed"
 
 
 class DepositSerializer(serializers.ModelSerializer):
