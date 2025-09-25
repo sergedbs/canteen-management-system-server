@@ -81,3 +81,16 @@ class MFAVerifySerializer(serializers.Serializer):
 
 class MFADisableSerializer(serializers.Serializer):
     password = serializers.CharField()
+
+
+class MFASetupStartSerializer(serializers.Serializer):
+    # Placeholder for future options; currently no inputs needed
+    pass
+
+
+class MFASetupConfirmSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=10)
+
+
+class MFABackupCodesRegenerateSerializer(serializers.Serializer):
+    password = serializers.CharField()

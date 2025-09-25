@@ -233,3 +233,6 @@ DEFAULT_FROM_EMAIL = "no-reply@canteen.utm.md"
 # Redis
 REDIS_HOST = env("REDIS_HOST", default="localhost")
 REDIS_PORT = env("REDIS_PORT", default=6379, cast=int)
+
+# MFA
+MFA_FERNET_KEY = env("MFA_FERNET_KEY", default="")

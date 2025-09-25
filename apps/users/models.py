@@ -41,7 +41,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     mfa_type = models.CharField(
         max_length=20, choices=[("email", "Email"), ("totp", "Authenticator")], blank=True, null=True
     )
-    mfa_secret = models.CharField(max_length=64, blank=True, null=True)
+    mfa_secret = models.CharField(blank=True, null=True)
 
     objects = UserManager()
 
