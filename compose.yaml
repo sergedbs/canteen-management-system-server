@@ -10,6 +10,8 @@ services:
       - POSTGRES_USER=$SQL_USER
       - POSTGRES_PASSWORD=$SQL_PASSWORD
       - POSTGRES_DB=$SQL_DATABASE
+    networks:
+      - private
 
   web:
     build: .
@@ -39,6 +41,32 @@ services:
 
         - action: rebuild
           path: ./Dockerfile
+    networks:
+      - public
+      - private
+    volumes:
+      - static_volume:/app/staticfiles
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro # additional config files
+      - ./certbot/conf:/etc/ssl:ro # SSL certificates
+      - ./certbot/www:/var/www/certbot:ro # Let's Encrypt challenges
+      - static_volume:/app/staticfiles:ro
+    depends_on:
+      - web
+    networks:
+      - public
 
 volumes:
   postgres_data:
+  static_volume:
+
+networks:
+  public:
+  private:

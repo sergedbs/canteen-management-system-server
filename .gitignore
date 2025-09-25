@@ -25,3 +25,5 @@ staticfiles/
 # Env files
 .env
 .env.*
+/certbot/conf/certs/nginx-selfsigned.crt
+/certbot/conf/private/nginx-selfsigned.key
