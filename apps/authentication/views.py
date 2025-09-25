@@ -55,6 +55,15 @@ def set_refresh_cookie(response, refresh_token, request):
             del response.data["refresh"]
 
 
+class CsrfView(APIView):
+    permission_classes = [AllowAny]
+
+    @method_decorator(ensure_csrf_cookie)
+    def get(self, request):
+        get_token(request)
+        return Response(status=204)
+
+
 @extend_schema(
     responses={
         201: {
@@ -100,6 +109,7 @@ class LoginView(TokenObtainPairView):
     },
     tags=["auth"],
 )
+# @method_decorator(csrf_protect, name="dispatch")
 class RefreshView(TokenRefreshView):
     """Refresh access token using refresh token from HttpOnly cookie."""
 
@@ -110,6 +120,7 @@ class RefreshView(TokenRefreshView):
         return super().finalize_response(request, response, *args, **kwargs)
 
 
+# @method_decorator(csrf_protect, name="dispatch")
 class LogoutView(APIView):
     permission_classes = [AllowAny]
 
@@ -134,12 +145,3 @@ class LogoutView(APIView):
         resp = Response(status=status.HTTP_204_NO_CONTENT)
         resp.delete_cookie(COOKIE_NAME, **delete_cookie_opts())
         return resp
-
-
-class CsrfView(APIView):
-    permission_classes = [AllowAny]
-
-    @method_decorator(ensure_csrf_cookie)
-    def get(self, request):
-        get_token(request)
-        return Response(status=204)
