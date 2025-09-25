@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from rest_framework import status
 from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -6,16 +7,17 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from apps.authentication.serializers import (
+    CustomTokenObtainPairSerializer,
     MFABackupCodesRegenerateSerializer,
     MFADisableSerializer,
     MFASetupConfirmSerializer,
     MFASetupStartSerializer,
     MFAVerifySerializer,
     RegisterSerializer,
-    TokenWithRoleObtainPairSerializer,
 )
 from apps.authentication.services import (
     disable_mfa,
+    handle_mfa_flow,
     regenerate_backup_codes,
     setup_mfa_confirm,
     setup_mfa_start,
@@ -33,8 +35,20 @@ class RegisterView(CreateAPIView):
     serializer_class = RegisterSerializer
 
 
-class TokenWithRoleObtainPairView(TokenObtainPairView):
-    serializer_class = TokenWithRoleObtainPairSerializer
+class LoginView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.user
+        mfa_payload = handle_mfa_flow(user)
+        if mfa_payload:
+            return Response(mfa_payload, status=status.HTTP_200_OK)
+
+        # default JWT token response
+        return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
 
 class MFASetupStartView(APIView):

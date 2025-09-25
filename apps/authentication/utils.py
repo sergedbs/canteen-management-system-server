@@ -2,6 +2,7 @@ import random
 
 from django.conf import settings
 from django.core.mail import send_mail
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.common.redis_client import redis_client
 
@@ -29,3 +30,24 @@ def verify_email_otp(user, token: str) -> bool:
         redis_client.delete(key)
         return True
     return False
+
+
+def get_custom_token(user):
+    """
+    Return a refresh token with custom claims.
+    """
+    refresh = RefreshToken.for_user(user)
+    refresh["role"] = user.role
+    refresh["mfa_enabled"] = user.mfa_enabled
+    return refresh
+
+
+def generate_tokens_for_user(user) -> dict:
+    """
+    Convenience function for access + refresh as strings.
+    """
+    refresh = get_custom_token(user)
+    return {
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+    }

@@ -13,7 +13,7 @@ from rest_framework import exceptions
 
 from apps.authentication.crypto import decrypt_text, encrypt_text
 from apps.authentication.models import MFABackupCode
-from apps.authentication.serializers import TokenWithRoleObtainPairSerializer
+from apps.authentication.utils import generate_tokens_for_user
 from apps.common.redis_client import redis_client
 
 User = get_user_model()
@@ -35,6 +35,24 @@ def _generate_backup_codes(user):
         [MFABackupCode(user=user, code_hash=make_password(code)) for code in backup_codes]
     )
     return backup_codes
+
+
+def handle_mfa_flow(user):
+    """
+    If MFA is enabled, return MFA ticket and response payload.
+    Otherwise return None.
+    """
+    if not user.mfa_enabled:
+        return None
+
+    # centralize ticket creation here
+    ticket = create_mfa_ticket(user)
+    return {
+        "mfa_required": True,
+        "mfa_type": user.mfa_type,
+        "mfa_ticket": ticket,
+        "message": "MFA verification required",
+    }
 
 
 def setup_mfa_start(user) -> dict:
@@ -168,10 +186,9 @@ def verify_mfa(ticket: str, code: str) -> dict:
     redis_client.delete(f"mfa:pending:{ticket}")
     redis_client.delete(attempts_key)
 
-    refresh = TokenWithRoleObtainPairSerializer.get_token(user)
+    tokens = generate_tokens_for_user(user)
     return {
-        "access": str(refresh.access_token),
-        "refresh": str(refresh),
+        **tokens,
         "message": "MFA verified successfully" if not matched else "MFA verified successfully with backup code",
     }
 

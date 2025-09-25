@@ -2,35 +2,16 @@ from django.contrib.auth import get_user_model, password_validation
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from apps.authentication.utils import get_custom_token
 from apps.users.utils import extract_name_from_email
 
 User = get_user_model()
 
 
-class TokenWithRoleObtainPairSerializer(TokenObtainPairSerializer):
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
-        token = super().get_token(user)
-        token["role"] = user.role
-        token["mfa_enabled"] = user.mfa_enabled
-
-        return token
-
-    def validate(self, attrs):
-        data = super().validate(attrs)
-        user = self.user
-        if user.mfa_enabled:
-            # Create ticket (no tokens yet)
-            from apps.authentication.services import create_mfa_ticket  # local import to avoid circular
-
-            ticket = create_mfa_ticket(user)
-            return {
-                "mfa_required": True,
-                "mfa_type": user.mfa_type,
-                "mfa_ticket": ticket,
-                "message": "MFA verification required",
-            }
-        return data
+        return get_custom_token(user)
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -65,7 +46,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        refresh = TokenWithRoleObtainPairSerializer.get_token(instance)
+        refresh = CustomTokenObtainPairSerializer.get_token(instance)
         data["refresh"] = str(refresh)
         data["access"] = str(refresh.access_token)
         return data
