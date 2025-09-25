@@ -1,213 +1,258 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Title</title>
-</head>
-<body>
+{% extends "unfold/layouts/base.html" %}
 
-</body>
-</html>{% extends "admin/base.html" %}
-{% load static %}
+{% load admin_urls i18n unfold %}
 
-{% block title %}Order Confirmation{% endblock %}
+{% block breadcrumbs %}{% if not is_popup %}
+  <div class="px-4">
+    <div class="container mb-6 mx-auto -my-3 lg:mb-12">
+      <ul class="flex flex-wrap">
+        {% url 'admin:index' as link %}
+        {% trans 'Home' as name %}
+        {% include 'unfold/helpers/breadcrumb_item.html' with link=link name=name %}
+
+        {% url 'admin:orders_order_changelist' as link %}
+        {% trans 'Orders' as name %}
+        {% include 'unfold/helpers/breadcrumb_item.html' with link=link name=name %}
+
+        {% trans 'Order Confirmation' as name %}
+        {% include 'unfold/helpers/breadcrumb_item.html' with name=name %}
+      </ul>
+    </div>
+  </div>
+{% endif %}{% endblock %}
 
 {% block content %}
-<div class="flex flex-col">
-    <div class="mb-6">
-        <h1 class="text-xl font-semibold text-gray-900 dark:text-white">
-            Order Confirmation
-        </h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Enter an order number to view details and confirm the order
-        </p>
-    </div>
+  <div class="space-y-6">
+    <div class="bg-white border border-gray-200 rounded-md shadow-sm dark:bg-gray-800 dark:border-gray-700">
+      <div class="px-4 py-5 sm:p-6">
+        <div class="mb-6">
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-white">
+            {% trans "Order Confirmation" %}
+          </h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            {% trans "Enter an order number to view details and confirm the order" %}
+          </p>
+        </div>
 
-    <div class="bg-white rounded-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700 p-6">
         <form id="order-search-form" class="mb-6">
-            <div class="flex gap-4">
-                <div class="flex-1">
-                    <label for="order_no" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Order Number
-                    </label>
-                    <input
-                        type="text"
-                        id="order_no"
-                        name="order_no"
-                        placeholder="Enter order number (e.g., ORD001)"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        required
-                    >
-                </div>
-                <div class="flex items-end">
-                    <button
-                        type="submit"
-                        class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                    >
-                        Search Order
-                    </button>
-                </div>
+          <div class="flex gap-4 flex-col sm:flex-row">
+            <div class="flex-1">
+              <label for="order_no" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {% trans "Order Number" %}
+              </label>
+              <input
+                type="text"
+                id="order_no"
+                name="order_no"
+                placeholder="{% trans "Enter order number (e.g., ORD001)" %}"
+                class="block w-full max-w-md rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                required
+              >
             </div>
+            <div class="flex items-end">
+              <button
+                type="submit"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-gray-800"
+              >
+                {% trans "Search Order" %}
+              </button>
+            </div>
+          </div>
         </form>
 
         <div id="order-details" class="hidden">
-            <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Order Details</h3>
-                        <div class="mt-2 space-y-1">
-                            <p><span class="font-medium">Order Number:</span> <span id="detail-order-no"></span></p>
-                            <p><span class="font-medium">Status:</span> <span id="detail-status"></span></p>
-                            <p><span class="font-medium">Customer:</span> <span id="detail-user-name"></span></p>
-                            <p><span class="font-medium">Email:</span> <span id="detail-user-email"></span></p>
-                            <p><span class="font-medium">Menu:</span> <span id="detail-menu-name"></span></p>
-                            <p><span class="font-medium">Total Amount:</span> $<span id="detail-total-amount"></span></p>
-                            <p><span class="font-medium">Reservation Time:</span> <span id="detail-reservation-time"></span></p>
-                            <p><span class="font-medium">Created At:</span> <span id="detail-created-at"></span></p>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Confirmation Status</h3>
-                        <div id="confirmation-status" class="mt-2 p-3 rounded-md">
-                            <p id="status-message" class="text-sm"></p>
-                        </div>
-                    </div>
+          <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">
+                  {% trans "Order Details" %}
+                </h3>
+                <div class="space-y-2">
+                  <div class="flex justify-between">
+                    <dt class="text-sm text-gray-600 dark:text-gray-400">{% trans "Order Number" %}:</dt>
+                    <dd class="text-sm text-gray-900 dark:text-gray-200 font-medium" id="detail-order-no"></dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-sm text-gray-600 dark:text-gray-400">{% trans "Status" %}:</dt>
+                    <dd class="text-sm text-gray-900 dark:text-gray-200 font-medium" id="detail-status"></dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-sm text-gray-600 dark:text-gray-400">{% trans "Customer" %}:</dt>
+                    <dd class="text-sm text-gray-900 dark:text-gray-200" id="detail-user-name"></dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-sm text-gray-600 dark:text-gray-400">{% trans "Email" %}:</dt>
+                    <dd class="text-sm text-gray-900 dark:text-gray-200" id="detail-user-email"></dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-sm text-gray-600 dark:text-gray-400">{% trans "Menu" %}:</dt>
+                    <dd class="text-sm text-gray-900 dark:text-gray-200" id="detail-menu-name"></dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-sm text-gray-600 dark:text-gray-400">{% trans "Total Amount" %}:</dt>
+                    <dd class="text-sm text-gray-900 dark:text-gray-200 font-medium" id="detail-total-amount"></dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-sm text-gray-600 dark:text-gray-400">{% trans "Reservation Time" %}:</dt>
+                    <dd class="text-sm text-gray-900 dark:text-gray-200" id="detail-reservation-time"></dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-sm text-gray-600 dark:text-gray-400">{% trans "Created At" %}:</dt>
+                    <dd class="text-sm text-gray-900 dark:text-gray-200" id="detail-created-at"></dd>
+                  </div>
                 </div>
-            </div>
-
-            <div class="mb-4">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">Order Items</h3>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-50 dark:bg-gray-700">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">
-                                    Item Name
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">
-                                    Quantity
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">
-                                    Unit Price
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">
-                                    Total Price
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody id="order-items" class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                            <!-- Items will be populated here -->
-                        </tbody>
-                    </table>
+              </div>
+              <div>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">
+                  {% trans "Confirmation Status" %}
+                </h3>
+                <div id="confirmation-status" class="p-3 rounded-md bg-gray-50 dark:bg-gray-700">
+                  <p id="status-message" class="text-sm"></p>
                 </div>
+              </div>
             </div>
+          </div>
 
-            <div id="confirm-section" class="hidden">
-                <button
-                    id="confirm-order-btn"
-                    class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                >
-                    Confirm Order
-                </button>
+          <div class="mb-4">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">
+              {% trans "Order Items" %}
+            </h3>
+            <div class="overflow-hidden border border-gray-200 dark:border-gray-700 rounded-lg">
+              <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    {% trans "Item Name" %}
+                  </th>
+                  <th scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    {% trans "Quantity" %}
+                  </th>
+                  <th scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    {% trans "Unit Price" %}
+                  </th>
+                  <th scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    {% trans "Total Price" %}
+                  </th>
+                </tr>
+                </thead>
+                <tbody id="order-items" class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
+                <!-- Items will be populated here -->
+                </tbody>
+              </table>
             </div>
+          </div>
+
+          <div id="confirm-section" class="hidden pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              id="confirm-order-btn"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800"
+            >
+              {% trans "Confirm Order" %}
+            </button>
+          </div>
         </div>
 
         <div id="no-order" class="text-center py-8 hidden">
-            <p class="text-gray-500 dark:text-gray-400">No order details to display</p>
+          <p class="text-gray-500 dark:text-gray-400">{% trans "No order details to display" %}</p>
         </div>
 
         <div id="loading" class="hidden text-center py-8">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-            <p class="mt-2 text-gray-500 dark:text-gray-400">Loading order details...</p>
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <p class="mt-2 text-gray-500 dark:text-gray-400">{% trans "Loading order details..." %}</p>
         </div>
+      </div>
     </div>
-</div>
+  </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const searchForm = document.getElementById('order-search-form');
-    const orderDetails = document.getElementById('order-details');
-    const noOrder = document.getElementById('no-order');
-    const loading = document.getElementById('loading');
-    const confirmSection = document.getElementById('confirm-section');
-    const confirmBtn = document.getElementById('confirm-order-btn');
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const searchForm = document.getElementById('order-search-form');
+      const orderDetails = document.getElementById('order-details');
+      const noOrder = document.getElementById('no-order');
+      const loading = document.getElementById('loading');
+      const confirmSection = document.getElementById('confirm-section');
+      const confirmBtn = document.getElementById('confirm-order-btn');
 
-    searchForm.addEventListener('submit', function(e) {
+      searchForm.addEventListener('submit', function (e) {
         e.preventDefault();
 
         const orderNo = document.getElementById('order_no').value.trim();
         if (!orderNo) {
-            alert('Please enter an order number');
-            return;
+          alert('{% trans "Please enter an order number" %}');
+          return;
         }
 
         showLoading();
 
         fetch(`/admin/orders/confirmation/search/?order_no=${encodeURIComponent(orderNo)}`)
-            .then(response => response.json())
-            .then(data => {
-                hideLoading();
+          .then(response => response.json())
+          .then(data => {
+            hideLoading();
 
-                if (data.error) {
-                    alert(data.error);
-                    showNoOrder();
-                } else {
-                    displayOrderDetails(data.order);
-                    orderDetails.classList.remove('hidden');
-                    noOrder.classList.add('hidden');
-                }
-            })
-            .catch(error => {
-                hideLoading();
-                console.error('Error:', error);
-                alert('An error occurred while searching for the order');
-                showNoOrder();
-            });
-    });
+            if (data.error) {
+              alert(data.error);
+              showNoOrder();
+            } else {
+              displayOrderDetails(data.order);
+              orderDetails.classList.remove('hidden');
+              noOrder.classList.add('hidden');
+            }
+          })
+          .catch(error => {
+            hideLoading();
+            console.error('Error:', error);
+            alert('{% trans "An error occurred while searching for the order" %}');
+            showNoOrder();
+          });
+      });
 
-    confirmBtn.addEventListener('click', function() {
+      confirmBtn.addEventListener('click', function () {
         const orderNo = document.getElementById('detail-order-no').textContent;
 
-        if (!confirm(`Are you sure you want to confirm order ${orderNo}? This will update the status to Preparing.`)) {
-            return;
+        if (!confirm(`{% trans "Are you sure you want to confirm order" %} ${orderNo}? {% trans "This will update the status to Preparing." %}`)) {
+          return;
         }
 
         fetch(`/admin/orders/confirmation/confirm/${orderNo}/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/json',
-            },
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+          },
         })
-        .then(response => response.json())
-        .then(data => {
+          .then(response => response.json())
+          .then(data => {
             if (data.success) {
-                alert(data.message);
-                document.getElementById('detail-status').textContent = data.new_status;
-                confirmSection.classList.add('hidden');
+              alert(data.message);
+              document.getElementById('detail-status').textContent = data.new_status;
+              confirmSection.classList.add('hidden');
 
-                // Update confirmation status
-                const statusMessage = document.getElementById('status-message');
-                statusMessage.textContent = 'Order has been confirmed successfully';
-                statusMessage.className = 'text-sm text-green-600';
+              // Update confirmation status
+              const statusMessage = document.getElementById('status-message');
+              statusMessage.textContent = '{% trans "Order has been confirmed successfully" %}';
+              statusMessage.className = 'text-sm text-green-600';
             } else {
-                alert(data.error || 'Failed to confirm order');
+              alert(data.error || '{% trans "Failed to confirm order" %}');
             }
-        })
-        .catch(error => {
+          })
+          .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while confirming the order');
-        });
-    });
+            alert('{% trans "An error occurred while confirming the order" %}');
+          });
+      });
 
-    function displayOrderDetails(order) {
+      function displayOrderDetails(order) {
         document.getElementById('detail-order-no').textContent = order.order_no;
         document.getElementById('detail-status').textContent = order.status;
         document.getElementById('detail-user-name').textContent = order.user_name;
         document.getElementById('detail-user-email').textContent = order.user_email;
         document.getElementById('detail-menu-name').textContent = order.menu_name;
         document.getElementById('detail-total-amount').textContent = order.total_amount;
-        document.getElementById('detail-reservation-time').textContent = order.reservation_time || 'N/A';
+        document.getElementById('detail-reservation-time').textContent = order.reservation_time || '{% trans "N/A" %}';
         document.getElementById('detail-created-at').textContent = order.created_at;
 
         // Populate order items
@@ -215,14 +260,14 @@ document.addEventListener('DOMContentLoaded', function() {
         itemsContainer.innerHTML = '';
 
         order.items.forEach(item => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
+          const row = document.createElement('tr');
+          row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">${item.item_name}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">${item.quantity}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">$${item.unit_price}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">$${item.total_price}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">MDL ${item.unit_price}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">MDL ${item.total_price}</td>
             `;
-            itemsContainer.appendChild(row);
+          itemsContainer.appendChild(row);
         });
 
         // Update confirmation status
@@ -230,49 +275,49 @@ document.addEventListener('DOMContentLoaded', function() {
         const confirmationStatus = document.getElementById('confirmation-status');
 
         if (order.can_confirm) {
-            statusMessage.textContent = 'Order can be confirmed (within menu time and pending status)';
-            statusMessage.className = 'text-sm text-green-600';
-            confirmSection.classList.remove('hidden');
+          statusMessage.textContent = '{% trans "Order can be confirmed (within menu time and pending status)" %}';
+          statusMessage.className = 'text-sm text-green-600';
+          confirmSection.classList.remove('hidden');
         } else {
-            if (order.is_currently_active) {
-                statusMessage.textContent = 'Order cannot be confirmed - not in pending status';
-            } else {
-                statusMessage.textContent = 'Order cannot be confirmed - outside menu time';
-            }
-            statusMessage.className = 'text-sm text-red-600';
-            confirmSection.classList.add('hidden');
+          if (order.is_currently_active) {
+            statusMessage.textContent = '{% trans "Order cannot be confirmed - not in pending status" %}';
+          } else {
+            statusMessage.textContent = '{% trans "Order cannot be confirmed - outside menu time" %}';
+          }
+          statusMessage.className = 'text-sm text-red-600';
+          confirmSection.classList.add('hidden');
         }
-    }
+      }
 
-    function showLoading() {
+      function showLoading() {
         loading.classList.remove('hidden');
         orderDetails.classList.add('hidden');
         noOrder.classList.add('hidden');
-    }
+      }
 
-    function hideLoading() {
+      function hideLoading() {
         loading.classList.add('hidden');
-    }
+      }
 
-    function showNoOrder() {
+      function showNoOrder() {
         noOrder.classList.remove('hidden');
         orderDetails.classList.add('hidden');
-    }
+      }
 
-    function getCookie(name) {
+      function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
             }
+          }
         }
         return cookieValue;
-    }
-});
-</script>
+      }
+    });
+  </script>
 {% endblock %}

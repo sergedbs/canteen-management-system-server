@@ -6,10 +6,13 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import TemplateView
+from unfold.views import UnfoldModelAdminViewMixin
 
 
-class OrderConfirmationView(TemplateView):
+class OrderConfirmationView(UnfoldModelAdminViewMixin, TemplateView):
     template_name = "admin/orders/order_confirmation.html"
+    title = "Order Confirmation"
+    permission_required = ("orders.view_order", "orders.change_order_status")
 
     @method_decorator(staff_member_required)
     @method_decorator(login_required)
