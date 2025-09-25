@@ -19,16 +19,17 @@ class TokenWithRoleObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
         user = self.user
-
-        # If MFA is enabled, don't return tokens immediately
         if user.mfa_enabled:
+            # Create ticket (no tokens yet)
+            from apps.authentication.services import create_mfa_ticket  # local import to avoid circular
+
+            ticket = create_mfa_ticket(user)
             return {
                 "mfa_required": True,
-                "email": user.email,
                 "mfa_type": user.mfa_type,
+                "mfa_ticket": ticket,
                 "message": "MFA verification required",
             }
-
         return data
 
 
@@ -75,8 +76,8 @@ class MFASetupSerializer(serializers.Serializer):
 
 
 class MFAVerifySerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    code = serializers.CharField(max_length=10)  # Support both 6-digit OTP and backup codes
+    ticket = serializers.CharField(max_length=64)
+    code = serializers.CharField(max_length=10)
 
 
 class MFADisableSerializer(serializers.Serializer):
@@ -84,7 +85,6 @@ class MFADisableSerializer(serializers.Serializer):
 
 
 class MFASetupStartSerializer(serializers.Serializer):
-    # Placeholder for future options; currently no inputs needed
     pass
 
 

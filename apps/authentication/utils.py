@@ -1,4 +1,3 @@
-# apps/authentication/utils.py
 import random
 
 from django.conf import settings
@@ -27,6 +26,6 @@ def verify_email_otp(user, token: str) -> bool:
     key = f"otp:{user.id}"
     otp = redis_client.get(key)
     if otp and otp == token:
-        redis_client.delete(key)  # one-time use
+        redis_client.delete(key)
         return True
     return False

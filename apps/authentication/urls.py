@@ -19,7 +19,6 @@ urlpatterns = [
     path("login/", TokenWithRoleObtainPairView.as_view(), name="token_obtain_pair"),
     path("refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("logout/", TokenBlacklistView.as_view(), name="token_blacklist"),
-    # path("mfa/setup", MFASetupView.as_view(), name="mfa_setup"),
     path("mfa/setup/start", MFASetupStartView.as_view(), name="mfa_setup_start"),
     path("mfa/setup/confirm", MFASetupConfirmView.as_view(), name="mfa_setup_confirm"),
     path("mfa/setup/regenerate", MFABackupCodesRegenerateView.as_view(), name="mfa_backup_codes_regenerate"),

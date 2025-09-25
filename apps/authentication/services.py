@@ -1,4 +1,5 @@
 import base64
+import json
 import secrets
 from io import BytesIO
 
@@ -98,16 +99,51 @@ def regenerate_backup_codes(user, password: str) -> dict:
     }
 
 
-def verify_mfa(email: str, code: str) -> dict:
+def create_mfa_ticket(user, context: dict | None = None, ttl_seconds: int = 300) -> str:
+    """Create a short-lived MFA ticket after primary auth (password) succeeds.
+
+    Stores user id + optional context in Redis; returns opaque ticket.
+    """
+    ticket = secrets.token_urlsafe(32)
+    # Ensure UUID or other non-JSON-serializable primary keys are stringified
+    payload = {"user_id": str(user.id), "ctx": context or {}}
+    redis_client.setex(f"mfa:pending:{ticket}", ttl_seconds, json.dumps(payload))
+    return ticket
+
+
+def verify_mfa(ticket: str, code: str) -> dict:
+    # Retrieve pending ticket
+    raw = redis_client.get(f"mfa:pending:{ticket}")
+    if not raw:
+        raise exceptions.ValidationError({"error": "Invalid or expired MFA ticket"})
     try:
-        user = User.objects.get(email=email)
+        data = json.loads(_to_str(raw))
+        user_id = data["user_id"]
+    except (ValueError, KeyError) as err:  # corrupt payload -> treat as invalid
+        redis_client.delete(f"mfa:pending:{ticket}")
+        raise exceptions.ValidationError({"error": "Invalid or expired MFA ticket"}) from err
+
+    try:
+        user = User.objects.get(id=user_id)
     except User.DoesNotExist as err:
-        raise exceptions.NotFound({"error": "User not found"}) from err
+        redis_client.delete(f"mfa:pending:{ticket}")
+        raise exceptions.ValidationError({"error": "Invalid or expired MFA ticket"}) from err
 
     if not user.mfa_enabled:
-        raise exceptions.ValidationError({"error": "MFA not enabled for this user"})
+        redis_client.delete(f"mfa:pending:{ticket}")
+        raise exceptions.ValidationError({"error": "MFA not enabled"})
 
-    # Backup codes (consume atomically to allow select_for_update)
+    # Rate limit attempts per ticket
+    attempts_key = f"mfa:attempts:{ticket}"
+    attempts = redis_client.incr(attempts_key)
+    if attempts == 1:
+        # align attempts TTL with ticket TTL (best effort: 5 min)
+        redis_client.expire(attempts_key, 300)
+    if attempts > 5:
+        redis_client.delete(f"mfa:pending:{ticket}")
+        raise exceptions.ValidationError({"error": "Too many failed attempts"})
+
+    # Backup codes (consume atomically)
     matched = False
     with transaction.atomic():
         qs = user.mfa_backup_codes.select_for_update().filter(used_at__isnull=True)
@@ -118,25 +154,26 @@ def verify_mfa(email: str, code: str) -> dict:
                 matched = True
                 break
 
-    if matched:
-        refresh = TokenWithRoleObtainPairSerializer.get_token(user)
-        return {
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-            "message": "MFA verified successfully with backup code",
-        }
+    if not matched:
+        # TOTP path
+        if user.mfa_type == "totp":
+            secret = decrypt_text(user.mfa_secret)
+            totp = pyotp.TOTP(secret)
+            if not totp.verify(code, valid_window=1):
+                raise exceptions.ValidationError({"error": "Invalid MFA code"})
+        else:
+            raise exceptions.ValidationError({"error": "Unsupported MFA type"})
 
-    # TOTP only
-    if user.mfa_type == "totp":
-        secret = decrypt_text(user.mfa_secret)
-        totp = pyotp.TOTP(secret)
-        if not totp.verify(code, valid_window=1):
-            raise exceptions.ValidationError({"error": "Invalid TOTP code"})
-    else:
-        raise exceptions.ValidationError({"error": "Email-based MFA is no longer supported"})
+    # Success -> clean up ticket & attempts
+    redis_client.delete(f"mfa:pending:{ticket}")
+    redis_client.delete(attempts_key)
 
     refresh = TokenWithRoleObtainPairSerializer.get_token(user)
-    return {"access": str(refresh.access_token), "refresh": str(refresh), "message": "MFA verified successfully"}
+    return {
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+        "message": "MFA verified successfully" if not matched else "MFA verified successfully with backup code",
+    }
 
 
 def disable_mfa(user, password: str) -> dict:

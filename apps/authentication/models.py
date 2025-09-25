@@ -4,8 +4,6 @@ from django.utils import timezone
 
 
 class MFABackupCode(models.Model):
-    """Stores one-time MFA backup codes hashed for a user."""
-
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
