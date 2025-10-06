@@ -92,7 +92,7 @@ class RegisterView(CreateAPIView):
 class LoginView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
-    def post(self, response, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -102,8 +102,9 @@ class LoginView(TokenObtainPairView):
             return Response(mfa_payload, status=status.HTTP_200_OK)
 
         # default JWT token response
+        response = Response(serializer.validated_data, status=status.HTTP_200_OK)
         set_refresh_cookie(response, response.data.get("refresh"), request)
-        return Response(serializer.validated_data, status=status.HTTP_200_OK)
+        return response
 
 
 class MFASetupStartView(APIView):
