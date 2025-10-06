@@ -1,10 +1,15 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.middleware.csrf import get_token
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.authentication.serializers import (
     CustomTokenObtainPairSerializer,
@@ -13,6 +18,7 @@ from apps.authentication.serializers import (
     MFASetupConfirmSerializer,
     MFASetupStartSerializer,
     MFAVerifySerializer,
+    RefreshSerializer,
     RegisterSerializer,
 )
 from apps.authentication.services import (
@@ -26,6 +32,49 @@ from apps.authentication.services import (
 
 User = get_user_model()
 
+COOKIE_NAME = "refresh_token"
+COOKIE_MAX_AGE = 14 * 24 * 3600  # 14 days
+
+
+def cookie_opts(request=None):
+    return {
+        "path": "/",
+        "samesite": "Lax",
+        "secure": (request.is_secure() if request else not settings.DEBUG),
+        "httponly": True,
+        # "domain": ".ourdomain.com"
+    }
+
+
+def delete_cookie_opts():
+    """Options for deleting cookies - more limited than set_cookie"""
+    return {
+        "path": "/",
+        "samesite": "Lax",
+        # "domain": ".ourdomain.com"
+    }
+
+
+def set_refresh_cookie(response, refresh_token, request):
+    if refresh_token:
+        response.set_cookie(
+            COOKIE_NAME,
+            refresh_token,
+            max_age=COOKIE_MAX_AGE,
+            **cookie_opts(request),
+        )
+        if hasattr(response, "data") and "refresh" in response.data:
+            del response.data["refresh"]
+
+
+class CsrfView(APIView):
+    permission_classes = [AllowAny]
+
+    @method_decorator(ensure_csrf_cookie)
+    def get(self, request):
+        get_token(request)
+        return Response(status=204)
+
 
 class RegisterView(CreateAPIView):
     permission_classes = [AllowAny]
@@ -34,11 +83,16 @@ class RegisterView(CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
 
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        set_refresh_cookie(response, response.data.get("refresh"), request)
+        return response
+
 
 class LoginView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
-    def post(self, request, *args, **kwargs):
+    def post(self, response, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -48,6 +102,7 @@ class LoginView(TokenObtainPairView):
             return Response(mfa_payload, status=status.HTTP_200_OK)
 
         # default JWT token response
+        set_refresh_cookie(response, response.data.get("refresh"), request)
         return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
 
@@ -100,3 +155,31 @@ class MFADisableView(APIView):
         serializer.is_valid(raise_exception=True)
         data = disable_mfa(request.user, serializer.validated_data["password"])
         return Response(data)
+
+
+class RefreshView(TokenRefreshView):
+    serializer_class = RefreshSerializer
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        set_refresh_cookie(response, response.data.get("refresh"), request)
+        return super().finalize_response(request, response, *args, **kwargs)
+
+
+class LogoutView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        refresh = request.COOKIES.get(COOKIE_NAME)
+
+        if refresh:
+            try:
+                from rest_framework_simplejwt.tokens import RefreshToken
+
+                token = RefreshToken(refresh)
+                token.blacklist()
+            except (InvalidToken, TokenError):
+                pass  # logout as idempotent
+
+        resp = Response(status=status.HTTP_204_NO_CONTENT)
+        resp.delete_cookie(COOKIE_NAME, **delete_cookie_opts())
+        return resp

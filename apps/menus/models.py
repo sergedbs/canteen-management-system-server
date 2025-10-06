@@ -87,7 +87,7 @@ class MenuItem(BaseModel):
     )
     display_order = models.IntegerField(default=0)
     quantity = models.PositiveIntegerField()
-    override_price = models.DecimalField(max_digits=10, decimal_places=2, null=True)
+    override_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     is_permanent = models.BooleanField(default=False)
 
     class Meta:

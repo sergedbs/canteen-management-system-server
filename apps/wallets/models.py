@@ -1,7 +1,7 @@
 from django.db import models
 from django.db.models import Q
 
-from apps.common.constants import TransactionType
+from apps.common.constants import TransactionStatus, TransactionType
 from apps.common.models import BaseModel
 from apps.orders.models import Order
 from apps.users.models import User
@@ -49,6 +49,7 @@ class Transaction(BaseModel):
     type = models.CharField(max_length=20, choices=TransactionType.choices)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     remaining_balance = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=TransactionStatus.choices, default=TransactionStatus.PENDING)
 
     class Meta:
         db_table = "transaction"

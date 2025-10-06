@@ -6,14 +6,14 @@ from apps.menus.models import Category, Item, Menu, MenuItem
 
 class ItemInline(TabularInline):
     model = Item
-    extra = 1
+    extra = 0
     autocomplete_fields = ["category"]
     exclude = ("deleted_at",)
 
 
 class MenuItemInline(TabularInline):
     model = MenuItem
-    extra = 1
+    extra = 0
     autocomplete_fields = ["item"]
     exclude = ("deleted_at",)
 

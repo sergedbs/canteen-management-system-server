@@ -1,4 +1,5 @@
 from django.contrib.auth.models import Group, Permission
+from django.db import connection
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
 from rest_framework.permissions import BasePermission
@@ -79,6 +80,7 @@ ROLE_PERMISSIONS = {
         ("menus", "view_category"),
         ("menus", "view_item"),
         ("menus", "view_menuitem"),
+        ("wallets", "view_own_balance"),
     ],
 }
 
@@ -93,6 +95,16 @@ def _get_permission(app_label: str, codename: str):
 
 @receiver(post_migrate)
 def create_default_groups(sender, **kwargs):
+    if sender.name != "apps.common":
+        return
+
+    table_names = connection.introspection.table_names()
+    required_tables = ["auth_group", "auth_permission", "django_content_type"]
+
+    if not all(table in table_names for table in required_tables):
+        print("Skipping group creation - required tables not yet created")
+        return
+
     for role, perm_list in ROLE_PERMISSIONS.items():
         group, created = Group.objects.get_or_create(name=role)
 
@@ -114,4 +126,3 @@ def create_default_groups(sender, **kwargs):
 class IsOwnerOrAdmin(BasePermission):
     def has_object_permission(self, request, view, obj):
         return request.user.is_staff or obj.user == request.user
-
