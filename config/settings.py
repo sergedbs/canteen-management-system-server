@@ -135,7 +135,9 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
     "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
@@ -148,6 +150,7 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Buy grechka, borsch and kompot easily.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "SCHEMA_PATH_PREFIX": r"/api/v1",
     "SERVERS": [
         {"url": "http://localhost:8000", "description": "Development server"},
     ],
@@ -229,3 +232,18 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 RBAC_FORCE_UPDATE_PERMISSIONS = False
+
+# Email backend
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = env("SMTP_HOST")
+EMAIL_PORT = env("SMTP_PORT")
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = False
+DEFAULT_FROM_EMAIL = "no-reply@canteen.utm.md"
+
+# Redis
+REDIS_HOST = env("REDIS_HOST", default="localhost")
+REDIS_PORT = env("REDIS_PORT", default=6379, cast=int)
+
+# MFA
+MFA_FERNET_KEY = env("MFA_FERNET_KEY", default="")

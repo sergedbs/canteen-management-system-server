@@ -3,7 +3,6 @@ from django.contrib.auth import get_user_model
 from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
-from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import AllowAny
@@ -13,9 +12,22 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.authentication.serializers import (
-    LoginSerializer,
+    CustomTokenObtainPairSerializer,
+    MFABackupCodesRegenerateSerializer,
+    MFADisableSerializer,
+    MFASetupConfirmSerializer,
+    MFASetupStartSerializer,
+    MFAVerifySerializer,
     RefreshSerializer,
     RegisterSerializer,
+)
+from apps.authentication.services import (
+    disable_mfa,
+    handle_mfa_flow,
+    regenerate_backup_codes,
+    setup_mfa_confirm,
+    setup_mfa_start,
+    verify_mfa,
 )
 
 User = get_user_model()
@@ -64,25 +76,11 @@ class CsrfView(APIView):
         return Response(status=204)
 
 
-@extend_schema(
-    responses={
-        201: {
-            "type": "object",
-            "properties": {
-                "email": {"type": "string", "format": "email"},
-                "access": {"type": "string"},
-            },
-        }
-    }
-)
 class RegisterView(CreateAPIView):
-    """
-    Sign-up a user using a corporate *.utm.md email and password of min length 8.
-    Returns email + access in the body and sets the refresh token as an HttpOnly cookie.
-    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
 
     queryset = User.objects.all()
-    permission_classes = [AllowAny]
     serializer_class = RegisterSerializer
 
     def create(self, request, *args, **kwargs):
@@ -92,27 +90,75 @@ class RegisterView(CreateAPIView):
 
 
 class LoginView(TokenObtainPairView):
-    """Login with email/password. Returns access token and sets refresh token as HttpOnly cookie."""
+    serializer_class = CustomTokenObtainPairSerializer
 
-    serializer_class = LoginSerializer
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-    def finalize_response(self, request, response, *args, **kwargs):
+        user = serializer.user
+        mfa_payload = handle_mfa_flow(user)
+        if mfa_payload:
+            return Response(mfa_payload, status=status.HTTP_200_OK)
+
+        # default JWT token response
+        response = Response(serializer.validated_data, status=status.HTTP_200_OK)
         set_refresh_cookie(response, response.data.get("refresh"), request)
-        return super().finalize_response(request, response, *args, **kwargs)
+        return response
 
 
-@extend_schema(
-    description="Refresh access token using refresh token from HttpOnly cookie.",
-    request=None,
-    responses={
-        200: {"type": "object", "properties": {"access": {"type": "string", "description": "New access token"}}}
-    },
-    tags=["auth"],
-)
-# @method_decorator(csrf_protect, name="dispatch")
+class MFASetupStartView(APIView):
+    serializer_class = MFASetupStartSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = setup_mfa_start(request.user)
+        return Response(data)
+
+
+class MFASetupConfirmView(APIView):
+    serializer_class = MFASetupConfirmSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = setup_mfa_confirm(request.user, serializer.validated_data["code"])
+        return Response(data)
+
+
+class MFABackupCodesRegenerateView(APIView):
+    serializer_class = MFABackupCodesRegenerateSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = regenerate_backup_codes(request.user, serializer.validated_data["password"])
+        return Response(data)
+
+
+class MFAVerifyView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = MFAVerifySerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = verify_mfa(serializer.validated_data["ticket"], serializer.validated_data["code"])
+        return Response(data)
+
+
+class MFADisableView(APIView):
+    serializer_class = MFADisableSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = disable_mfa(request.user, serializer.validated_data["password"])
+        return Response(data)
+
+
 class RefreshView(TokenRefreshView):
-    """Refresh access token using refresh token from HttpOnly cookie."""
-
     serializer_class = RefreshSerializer
 
     def finalize_response(self, request, response, *args, **kwargs):
@@ -120,16 +166,9 @@ class RefreshView(TokenRefreshView):
         return super().finalize_response(request, response, *args, **kwargs)
 
 
-# @method_decorator(csrf_protect, name="dispatch")
 class LogoutView(APIView):
     permission_classes = [AllowAny]
 
-    @extend_schema(
-        description="Blacklist the refresh token from cookie and clear the refresh_token cookie from browser.",
-        request=None,
-        responses={204: {"description": "Successfully logged out"}},
-        tags=["auth"],
-    )
     def post(self, request):
         refresh = request.COOKIES.get(COOKIE_NAME)
 

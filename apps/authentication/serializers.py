@@ -3,19 +3,20 @@ from rest_framework import serializers
 from rest_framework_simplejwt.exceptions import InvalidToken
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 
+from apps.authentication.utils import get_custom_token
 from apps.users.utils import extract_name_from_email
 
 User = get_user_model()
 
 
-class LoginSerializer(TokenObtainPairSerializer):
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
         token["role"] = user.role
         token["verified"] = user.is_verified
 
-        return token
+        return get_custom_token(user)
 
 
 class RefreshSerializer(TokenRefreshSerializer):
@@ -61,7 +62,32 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        refresh = LoginSerializer.get_token(instance)
+        refresh = CustomTokenObtainPairSerializer.get_token(instance)
         data["refresh"] = str(refresh)
         data["access"] = str(refresh.access_token)
         return data
+
+
+class MFASetupSerializer(serializers.Serializer):
+    mfa_type = serializers.ChoiceField(choices=[("totp", "Authenticator")])
+
+
+class MFAVerifySerializer(serializers.Serializer):
+    ticket = serializers.CharField(max_length=64)
+    code = serializers.CharField(max_length=10)
+
+
+class MFADisableSerializer(serializers.Serializer):
+    password = serializers.CharField()
+
+
+class MFASetupStartSerializer(serializers.Serializer):
+    pass
+
+
+class MFASetupConfirmSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=10)
+
+
+class MFABackupCodesRegenerateSerializer(serializers.Serializer):
+    password = serializers.CharField()

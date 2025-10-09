@@ -8,14 +8,12 @@ from .serializers import UserSerializer
 
 User = get_user_model()
 
+# class UsersView(APIView):
+#     def get(self, request):
+#         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
-# Admin / Staff
-class UsersView(APIView):
-    def get(self, request):
-        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
-
-    def post(self, request):
-        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+#     def post(self, request):
+#         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 class UserDetailView(RetrieveAPIView):
@@ -23,31 +21,31 @@ class UserDetailView(RetrieveAPIView):
     serializer_class = UserSerializer
     lookup_field = "id"
 
-    def patch(self, request, *args, **kwargs):
-        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+    # def patch(self, request, *args, **kwargs):
+    #     return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
-    def delete(self, request, *args, **kwargs):
-        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
-
-
-class UserPasswordAdminView(APIView):
-    def patch(self, request, user_id):
-        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+    # def delete(self, request, *args, **kwargs):
+    #     return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
-class UserBalanceView(APIView):
-    def get(self, request, user_id):
-        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+# class UserPasswordAdminView(APIView):
+#     def patch(self, request, user_id):
+#         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
-class UserOrdersView(APIView):
-    def get(self, request, user_id):
-        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+# class UserBalanceView(APIView):
+#     def get(self, request, user_id):
+#         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
-class UserTransactionsView(APIView):
-    def get(self, request, user_id):
-        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+# class UserOrdersView(APIView):
+#     def get(self, request, user_id):
+#         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+
+
+# class UserTransactionsView(APIView):
+#     def get(self, request, user_id):
+#         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 class UserByAccountNoView(APIView):
