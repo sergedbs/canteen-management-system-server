@@ -56,6 +56,7 @@ def delete_cookie_opts():
 
 
 def set_refresh_cookie(response, refresh_token, request):
+    """Set refresh token as httpOnly cookie and remove from response body."""
     if refresh_token:
         response.set_cookie(
             COOKIE_NAME,
@@ -63,6 +64,7 @@ def set_refresh_cookie(response, refresh_token, request):
             max_age=COOKIE_MAX_AGE,
             **cookie_opts(request),
         )
+        # Remove refresh from response body
         if hasattr(response, "data") and "refresh" in response.data:
             del response.data["refresh"]
 
@@ -99,9 +101,10 @@ class LoginView(TokenObtainPairView):
         user = serializer.user
         mfa_payload = handle_mfa_flow(user)
         if mfa_payload:
+            # MFA required - don't set cookies yet
             return Response(mfa_payload, status=status.HTTP_200_OK)
 
-        # default JWT token response
+        # No MFA - set refresh cookie
         response = Response(serializer.validated_data, status=status.HTTP_200_OK)
         set_refresh_cookie(response, response.data.get("refresh"), request)
         return response
@@ -145,7 +148,11 @@ class MFAVerifyView(APIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = verify_mfa(serializer.validated_data["ticket"], serializer.validated_data["code"])
-        return Response(data)
+
+        # After successful MFA verification, set refresh cookie
+        response = Response(data, status=status.HTTP_200_OK)
+        set_refresh_cookie(response, data.get("refresh"), request)
+        return response
 
 
 class MFADisableView(APIView):
