@@ -38,8 +38,6 @@ def get_custom_token(user):
     """
     refresh = RefreshToken.for_user(user)
     refresh["role"] = user.role
-    refresh["mfa_enabled"] = user.mfa_enabled
-    refresh["verified"] = user.is_verified
     return refresh
 
 
