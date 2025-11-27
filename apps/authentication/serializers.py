@@ -84,5 +84,54 @@ class MFASetupConfirmSerializer(serializers.Serializer):
     code = serializers.CharField(max_length=10)
 
 
+class EmailVerifySerializer(serializers.Serializer):
+    token = serializers.CharField(required=True)
+
+
+class EmailResendSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+
 class MFABackupCodesRegenerateSerializer(serializers.Serializer):
     password = serializers.CharField()
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, min_length=8)
+    confirm_new_password = serializers.CharField(required=True, min_length=8)
+
+    def validate(self, attrs):
+        if attrs["new_password"] != attrs["confirm_new_password"]:
+            raise serializers.ValidationError({"confirm_new_password": "Password fields didn't match."})
+        return attrs
+
+    def validate_old_password(self, value):
+        user = self.context["request"].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Old password is not correct")
+        return value
+
+    def validate_new_password(self, value):
+        user = self.context["request"].user
+        password_validation.validate_password(value, user)
+        return value
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, min_length=8)
+    confirm_new_password = serializers.CharField(required=True, min_length=8)
+
+    def validate(self, attrs):
+        if attrs["new_password"] != attrs["confirm_new_password"]:
+            raise serializers.ValidationError({"confirm_new_password": "Password fields didn't match."})
+        return attrs
+
+    def validate_new_password(self, value):
+        password_validation.validate_password(value)
+        return value

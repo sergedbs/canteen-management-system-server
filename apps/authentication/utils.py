@@ -2,11 +2,29 @@ import random
 
 from django.conf import settings
 from django.core.mail import send_mail
+from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.common.redis_client import redis_client
 
 OTP_TTL = 300  # 5 minutes
+EMAIL_VERIFICATION_TIMEOUT = 86400  # 24 hours
+
+
+def generate_verification_token(user):
+    """Generate a signed token for email verification."""
+    signer = TimestampSigner()
+    return signer.sign(str(user.id))
+
+
+def verify_email_token(token, max_age=EMAIL_VERIFICATION_TIMEOUT):
+    """Verify the token and return the user ID if valid."""
+    signer = TimestampSigner()
+    try:
+        user_id = signer.unsign(token, max_age=max_age)
+        return user_id
+    except (BadSignature, SignatureExpired):
+        return None
 
 
 def generate_email_otp(user):
@@ -38,6 +56,7 @@ def get_custom_token(user):
     """
     refresh = RefreshToken.for_user(user)
     refresh["role"] = user.role
+    refresh["verified"] = user.is_verified
     return refresh
 
 
@@ -50,3 +69,19 @@ def generate_tokens_for_user(user) -> dict:
         "access": str(refresh.access_token),
         "refresh": str(refresh),
     }
+
+
+def generate_password_reset_token(user):
+    """Generate a signed token for password reset."""
+    signer = TimestampSigner(salt="password-reset")
+    return signer.sign(str(user.id))
+
+
+def verify_password_reset_token(token, max_age=3600):  # 1 hour expiration
+    """Verify the password reset token and return the user ID if valid."""
+    signer = TimestampSigner(salt="password-reset")
+    try:
+        user_id = signer.unsign(token, max_age=max_age)
+        return user_id
+    except (BadSignature, SignatureExpired):
+        return None

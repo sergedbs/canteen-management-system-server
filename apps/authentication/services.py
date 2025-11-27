@@ -2,21 +2,63 @@ import base64
 import json
 import secrets
 from io import BytesIO
+from typing import TYPE_CHECKING
 
 import pyotp
 import qrcode
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password, make_password
+from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import exceptions
 
 from apps.authentication.crypto import decrypt_text, encrypt_text
 from apps.authentication.models import MFABackupCode
-from apps.authentication.utils import generate_tokens_for_user
+from apps.authentication.utils import (
+    generate_password_reset_token,
+    generate_tokens_for_user,
+    generate_verification_token,
+)
 from apps.common.redis_client import redis_client
 
+if TYPE_CHECKING:
+    from apps.users.models import User as UserType
+else:
+    UserType = object
+
 User = get_user_model()
+
+
+def send_verification_email(user: "UserType"):
+    """Generate token and send verification email."""
+    token = generate_verification_token(user)
+    # TODO: Replace with actual frontend URL from settings  # noqa: FIX002
+    frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+    verification_link = f"{frontend_url}/verify-email?token={token}"
+
+    send_mail(
+        "Verify your email",
+        f"Please click the following link to verify your email: {verification_link}",
+        settings.DEFAULT_FROM_EMAIL,
+        [user.email],
+    )
+
+
+def send_password_reset_email(user: "UserType"):
+    """Generate token and send password reset email."""
+    token = generate_password_reset_token(user)
+    # Link points to frontend password reset page
+    frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+    reset_link = f"{frontend_url}/reset-password?token={token}"
+
+    send_mail(
+        "Reset your password",
+        f"Please click the following link to reset your password: {reset_link}",
+        settings.DEFAULT_FROM_EMAIL,
+        [user.email],
+    )
 
 
 def _to_str(val):
