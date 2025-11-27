@@ -35,7 +35,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     last_name = models.CharField(max_length=50, blank=True)
     is_staff = models.BooleanField(default=False)
     role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.CUSTOMER)
-    is_verified = models.BooleanField(default=True)
+    is_verified = models.BooleanField(default=False)
 
     mfa_enabled = models.BooleanField(default=False)
     mfa_type = models.CharField(

@@ -13,6 +13,7 @@ class UserSerializer(serializers.ModelSerializer):
             "last_name",
             "email",
             "role",
+            "mfa_enabled",
             "created_at",
             "updated_at",
         ]

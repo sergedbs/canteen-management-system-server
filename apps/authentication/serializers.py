@@ -12,22 +12,21 @@ User = get_user_model()
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
-        token = super().get_token(user)
-        token["role"] = user.role
-        token["verified"] = user.is_verified
-
         return get_custom_token(user)
 
 
 class RefreshSerializer(TokenRefreshSerializer):
-    refresh = None
+    refresh = serializers.CharField(required=False, allow_blank=True, write_only=True)
 
     def validate(self, attrs):
-        attrs["refresh"] = self.context["request"].COOKIES.get("refresh_token")
-        if attrs["refresh"]:
-            return super().validate(attrs)
-        else:
+        # Get refresh token from cookie
+        refresh_token = self.context["request"].COOKIES.get("refresh_token")
+        if not refresh_token:
             raise InvalidToken("No valid token found in cookie 'refresh_token'")
+
+        # Set it in attrs for parent validation
+        attrs["refresh"] = refresh_token
+        return super().validate(attrs)
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -62,14 +61,10 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        refresh = CustomTokenObtainPairSerializer.get_token(instance)
+        refresh = get_custom_token(instance)
         data["refresh"] = str(refresh)
         data["access"] = str(refresh.access_token)
         return data
-
-
-class MFASetupSerializer(serializers.Serializer):
-    mfa_type = serializers.ChoiceField(choices=[("totp", "Authenticator")])
 
 
 class MFAVerifySerializer(serializers.Serializer):
@@ -89,5 +84,54 @@ class MFASetupConfirmSerializer(serializers.Serializer):
     code = serializers.CharField(max_length=10)
 
 
+class EmailVerifySerializer(serializers.Serializer):
+    token = serializers.CharField(required=True)
+
+
+class EmailResendSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+
 class MFABackupCodesRegenerateSerializer(serializers.Serializer):
     password = serializers.CharField()
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, min_length=8)
+    confirm_new_password = serializers.CharField(required=True, min_length=8)
+
+    def validate(self, attrs):
+        if attrs["new_password"] != attrs["confirm_new_password"]:
+            raise serializers.ValidationError({"confirm_new_password": "Password fields didn't match."})
+        return attrs
+
+    def validate_old_password(self, value):
+        user = self.context["request"].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Old password is not correct")
+        return value
+
+    def validate_new_password(self, value):
+        user = self.context["request"].user
+        password_validation.validate_password(value, user)
+        return value
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, min_length=8)
+    confirm_new_password = serializers.CharField(required=True, min_length=8)
+
+    def validate(self, attrs):
+        if attrs["new_password"] != attrs["confirm_new_password"]:
+            raise serializers.ValidationError({"confirm_new_password": "Password fields didn't match."})
+        return attrs
+
+    def validate_new_password(self, value):
+        password_validation.validate_password(value)
+        return value
