@@ -45,7 +45,7 @@ class OrderByIdView(APIView):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
-@extend_schema(summary="Staff: Get order by 6 character code")
+@extend_schema(summary="Staff: Get order by 6 character UPPERCASE code")
 class OrderByNumberView(RetrieveAPIView):
     permission_classes = [IsAdminUser]
     serializer_class = OrderListSerializer
