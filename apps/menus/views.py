@@ -13,6 +13,7 @@ from apps.orders.models import OrderItem
 
 
 # --- Items ---
+@extend_schema(deprecated=True)
 class ItemsView(APIView):
     def get(self, request):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
@@ -21,6 +22,7 @@ class ItemsView(APIView):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
+@extend_schema(deprecated=True)
 class ItemDetailView(APIView):
     def get(self, request, item_id):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
@@ -33,6 +35,7 @@ class ItemDetailView(APIView):
 
 
 # --- Categories ---
+@extend_schema(deprecated=True)
 class CategoriesView(APIView):
     def get(self, request):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
@@ -41,6 +44,7 @@ class CategoriesView(APIView):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
+@extend_schema(deprecated=True)
 class CategoryDetailView(APIView):
     def get(self, request, category_id):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
@@ -85,6 +89,7 @@ class MenusView(generics.ListAPIView):
     #     return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
+@extend_schema(deprecated=True)
 class MenuDetailView(APIView):
     def get(self, request, menu_id):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
@@ -96,6 +101,7 @@ class MenuDetailView(APIView):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
+@extend_schema(deprecated=True)
 class MenuItemsView(APIView):
     def get(self, request, menu_id):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
@@ -104,6 +110,7 @@ class MenuItemsView(APIView):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
+@extend_schema(deprecated=True)
 class MenuItemDetailView(APIView):
     def get(self, request, menu_id, item_id):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)

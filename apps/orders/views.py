@@ -1,9 +1,9 @@
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import CreateAPIView
-from rest_framework.generics import ListCreateAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveAPIView
+from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -17,7 +17,13 @@ class _MeMixin(VerifiedCustomerMixin):
     def _bind_me(self, request):
         pass
 
-      
+
+@extend_schema_view(
+    get=extend_schema(
+        summary="Staff: Get all orders. | Customer: Get personal orders.",
+    ),
+    post=extend_schema(summary="Customer: Place an order."),
+)
 class OrderCreateView(ListCreateAPIView):
     queryset = Order.objects.all()
 
@@ -33,16 +39,21 @@ class OrderCreateView(ListCreateAPIView):
         return OrderListSerializer
 
 
+@extend_schema(deprecated=True)
 class OrderByIdView(APIView):
     def get(self, request, order_id):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
-class OrderByNumberView(APIView):
-    def get(self, request, order_no):
-        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+@extend_schema(summary="Staff: Get order by 6 character UPPERCASE code")
+class OrderByNumberView(RetrieveAPIView):
+    permission_classes = [IsAdminUser]
+    serializer_class = OrderListSerializer
+    lookup_field = "order_no"
+    queryset = Order.objects.all()
 
 
+@extend_schema(deprecated=True, description="Use `/orders/capture/` instead.")
 class OrderProcessView(APIView):
     def post(self, request, order_id):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
