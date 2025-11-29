@@ -1,5 +1,5 @@
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView, RetrieveAPIView
@@ -18,6 +18,12 @@ class _MeMixin(VerifiedCustomerMixin):
         pass
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="Staff: Get all orders. | Customer: Get personal orders.",
+    ),
+    post=extend_schema(summary="Customer: Place an order."),
+)
 class OrderCreateView(ListCreateAPIView):
     queryset = Order.objects.all()
 
@@ -39,6 +45,7 @@ class OrderByIdView(APIView):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
+@extend_schema(summary="Staff: Get order by 6 character code")
 class OrderByNumberView(RetrieveAPIView):
     permission_classes = [IsAdminUser]
     serializer_class = OrderListSerializer
