@@ -14,6 +14,7 @@ dependencies = [
     "djangorestframework~=3.16.1",
     "djangorestframework-simplejwt[crypto]~=5.5.1",
     "drf-spectacular~=0.28.0",
+    "msal>=1.31.0",
     "pillow>=11.3.0",
     "psycopg[binary]~=3.2.9",
     "pyotp>=2.9.0",

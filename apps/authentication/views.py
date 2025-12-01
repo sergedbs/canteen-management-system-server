@@ -20,6 +20,7 @@ from apps.authentication.serializers import (
     MFASetupConfirmSerializer,
     MFASetupStartSerializer,
     MFAVerifySerializer,
+    MicrosoftAuthCallbackSerializer,
     PasswordChangeSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
@@ -28,7 +29,9 @@ from apps.authentication.serializers import (
 )
 from apps.authentication.services import (
     disable_mfa,
+    get_microsoft_auth_url,
     handle_mfa_flow,
+    handle_microsoft_callback,
     regenerate_backup_codes,
     send_password_reset_email,
     send_verification_email,
@@ -306,3 +309,100 @@ class PasswordResetConfirmView(APIView):
             return Response({"message": "Password reset successfully"}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+class MicrosoftAuthStartView(APIView):
+    """Start Microsoft OAuth flow - returns authorization URL."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        data = get_microsoft_auth_url()
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class MicrosoftAuthCallbackView(APIView):
+    """Handle Microsoft OAuth callback - exchanges code for tokens and authenticates user."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    serializer_class = MicrosoftAuthCallbackSerializer
+
+    def post(self, request):
+        """Handle callback via POST (recommended for SPA flow)."""
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        code = serializer.validated_data["code"]
+        state = serializer.validated_data.get("state")
+
+        data = handle_microsoft_callback(code, state)
+
+        # Check if MFA is required
+        if data.get("mfa_required"):
+            return Response(data, status=status.HTTP_200_OK)
+
+        # Set refresh token as httpOnly cookie
+        response = Response(data, status=status.HTTP_200_OK)
+        set_refresh_cookie(response, data.get("refresh"), request)
+        return response
+
+    def get(self, request):
+        """Handle callback via GET (Microsoft redirect)."""
+        code = request.query_params.get("code")
+        state = request.query_params.get("state")
+        error = request.query_params.get("error")
+        error_description = request.query_params.get("error_description")
+
+        # Handle error from Microsoft
+        if error:
+            frontend_url = settings.FRONTEND_URL
+            error_params = f"?error={error}&error_description={error_description or 'Authentication failed'}"
+            from django.shortcuts import redirect
+
+            return redirect(f"{frontend_url}/auth/microsoft/callback{error_params}")
+
+        if not code:
+            return Response({"error": "Authorization code not provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            data = handle_microsoft_callback(code, state)
+
+            # For development/testing: return JSON if no frontend
+            # In production, set FRONTEND_URL and this will redirect
+            frontend_url = settings.FRONTEND_URL
+            if not frontend_url or frontend_url == "http://localhost:3000":
+                # Return JSON response for testing (no frontend running)
+                response = Response(data, status=status.HTTP_200_OK)
+                set_refresh_cookie(response, data.get("refresh"), request)
+                return response
+
+            # Check if MFA is required
+            if data.get("mfa_required"):
+                # Redirect to frontend with MFA ticket
+                mfa_ticket = data.get("mfa_ticket")
+                mfa_type = data.get("mfa_type")
+                from django.shortcuts import redirect
+
+                return redirect(f"{frontend_url}/auth/mfa?ticket={mfa_ticket}&type={mfa_type}")
+
+            # Redirect to frontend with tokens (access token in URL, refresh in cookie)
+            from django.shortcuts import redirect
+
+            access_token = data.get("access")
+            response = redirect(f"{frontend_url}/auth/microsoft/callback?access_token={access_token}")
+            set_refresh_cookie(response, data.get("refresh"), request)
+            return response
+
+        except (ValueError, KeyError) as e:
+            frontend_url = settings.FRONTEND_URL
+            if not frontend_url or frontend_url == "http://localhost:3000":
+                # Return JSON error for testing
+                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+            from urllib.parse import quote
+
+            from django.shortcuts import redirect
+
+            return redirect(f"{frontend_url}/auth/microsoft/callback?error={quote(str(e))}")

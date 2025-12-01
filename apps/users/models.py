@@ -29,6 +29,11 @@ class UserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 
+class OAuthProvider(models.TextChoices):
+    NONE = "none", "None"
+    MICROSOFT = "microsoft", "Microsoft"
+
+
 class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=50, blank=True)
@@ -36,6 +41,10 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     is_staff = models.BooleanField(default=False)
     role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.CUSTOMER)
     is_verified = models.BooleanField(default=False)
+
+    # OAuth fields
+    oauth_provider = models.CharField(max_length=20, choices=OAuthProvider.choices, default=OAuthProvider.NONE)
+    oauth_id = models.CharField(max_length=255, blank=True, null=True)  # Microsoft user OID
 
     mfa_enabled = models.BooleanField(default=False)
     mfa_type = models.CharField(

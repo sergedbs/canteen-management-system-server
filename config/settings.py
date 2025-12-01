@@ -247,3 +247,12 @@ REDIS_PORT = env("REDIS_PORT", default=6379, cast=int)
 
 # MFA
 MFA_FERNET_KEY = env("MFA_FERNET_KEY", default="")
+
+# Microsoft OAuth Settings
+MICROSOFT_CLIENT_ID = env("MICROSOFT_CLIENT_ID", default="")
+MICROSOFT_CLIENT_SECRET = env("MICROSOFT_CLIENT_SECRET", default="")
+MICROSOFT_TENANT_ID = env("MICROSOFT_TENANT_ID", default="common")
+MICROSOFT_REDIRECT_URI = env("MICROSOFT_REDIRECT_URI", default="http://localhost:8000/auth/microsoft/callback")
+
+# Frontend URL for redirects after OAuth
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")

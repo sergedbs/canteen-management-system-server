@@ -10,6 +10,8 @@ from .views import (
     MFASetupConfirmView,
     MFASetupStartView,
     MFAVerifyView,
+    MicrosoftAuthCallbackView,
+    MicrosoftAuthStartView,
     PasswordChangeView,
     PasswordResetConfirmView,
     PasswordResetRequestView,
@@ -34,4 +36,7 @@ urlpatterns = [
     path("mfa/setup/regenerate", MFABackupCodesRegenerateView.as_view(), name="mfa_backup_codes_regenerate"),
     path("mfa/verify", MFAVerifyView.as_view(), name="mfa_verify"),
     path("mfa/disable", MFADisableView.as_view(), name="mfa_disable"),
+    # Microsoft OAuth
+    path("microsoft", MicrosoftAuthStartView.as_view(), name="microsoft_auth_start"),
+    path("microsoft/callback", MicrosoftAuthCallbackView.as_view(), name="microsoft_auth_callback"),
 ]
