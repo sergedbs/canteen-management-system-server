@@ -255,4 +255,4 @@ MICROSOFT_TENANT_ID = env("MICROSOFT_TENANT_ID", default="common")
 MICROSOFT_REDIRECT_URI = env("MICROSOFT_REDIRECT_URI", default="http://localhost:8000/auth/microsoft/callback")
 
 # Frontend URL for redirects after OAuth
-FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:8080")
