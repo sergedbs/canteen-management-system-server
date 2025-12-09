@@ -1,15 +1,22 @@
+import logging
+
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
-from rest_framework import generics
+from rest_framework import generics, status
+from rest_framework.response import Response
 
 from apps.common.mixins import PermissionMixin, VerifiedCustomerMixin
 from apps.users.models import User
 from apps.wallets.models import Balance, Transaction
 from apps.wallets.serializers import (
     BalanceSerializer,
+    CheckoutSessionResponseSerializer,
+    CreateCheckoutSessionSerializer,
     DepositSerializer,
+    SessionStatusResponseSerializer,
     TransactionPublicSerializer,
 )
+from apps.wallets.services import StripeService, WalletError
 
 
 class _MeMixin(VerifiedCustomerMixin):
@@ -236,3 +243,89 @@ class WalletTransactionDetailMeView(_MeMixin, generics.RetrieveAPIView):
             from django.http import Http404
 
             raise Http404("User has no wallet balance") from err
+
+
+logger = logging.getLogger(__name__)
+
+
+@extend_schema(
+    summary="Customer: Create Stripe checkout session",
+    description="Create a Stripe embedded checkout session for wallet top-up. "
+    "Returns client_secret to initialize Stripe.js on frontend.",
+    request=CreateCheckoutSessionSerializer,
+    responses={
+        200: CheckoutSessionResponseSerializer,
+        400: {"description": "Invalid amount or validation error"},
+    },
+    tags=["wallets", "stripe"],
+)
+class CreateCheckoutSessionView(VerifiedCustomerMixin, generics.CreateAPIView):
+    serializer_class = CreateCheckoutSessionSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            stripe_service = StripeService()
+            session_data = stripe_service.create_checkout_session(
+                user=request.user,
+                amount=serializer.validated_data["amount"],
+                currency=serializer.validated_data.get("currency", "mdl"),
+            )
+
+            response_serializer = CheckoutSessionResponseSerializer(session_data)
+            return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+        except WalletError as e:
+            logger.error(f"Stripe checkout error for user {request.user.id}: {e}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+    summary="Customer: Check checkout session status",
+    description="Retrieve the status of a Stripe checkout session and associated transaction.",
+    parameters=[
+        {
+            "name": "session_id",
+            "in": "query",
+            "required": True,
+            "schema": {"type": "string"},
+            "description": "Stripe checkout session ID",
+        }
+    ],
+    responses={
+        200: SessionStatusResponseSerializer,
+        400: {"description": "Missing or invalid session_id"},
+        404: {"description": "Session not found"},
+    },
+    tags=["wallets", "stripe"],
+)
+class SessionStatusView(VerifiedCustomerMixin, generics.GenericAPIView):
+    serializer_class = SessionStatusResponseSerializer
+
+    def get(self, request, *args, **kwargs):
+        session_id = request.query_params.get("session_id")
+
+        if not session_id:
+            return Response({"error": "session_id parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            stripe_service = StripeService()
+
+            # Get Stripe session status
+            session_status = stripe_service.retrieve_session_status(session_id)
+
+            # Get local transaction status
+            try:
+                transaction = stripe_service.get_transaction_by_session(session_id)
+                session_status["transaction_status"] = transaction.status
+            except Exception:  # noqa
+                session_status["transaction_status"] = None
+
+            response_serializer = SessionStatusResponseSerializer(session_status)
+            return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+        except WalletError as e:
+            logger.error(f"Failed to retrieve session status for {session_id}: {e}")
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)

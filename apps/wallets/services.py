@@ -253,3 +253,137 @@ def cancel_order_with_hold_release(user, order_id) -> WalletResult:
     order.save(update_fields=["status"])
 
     return WalletResult(transaction=None, balance=balance, order=order)
+
+
+class StripeService:
+    """
+    Service class for Stripe integration.
+    Handles checkout session creation, status retrieval, and transaction management.
+    """
+
+    def __init__(self):
+        import stripe
+        from django.conf import settings
+
+        stripe.api_key = settings.STRIPE_SECRET_KEY
+        self.stripe = stripe
+        self.settings = settings
+
+    def create_checkout_session(self, user, amount: Decimal, currency: str = "mdl") -> dict:
+        """
+        Create a Stripe checkout session for balance top-up.
+        Returns session data including client_secret for frontend.
+
+        Args:
+            user: User instance
+            amount: Amount to top up (in dollars/euros, etc.)
+            currency: Currency code (default: mdl)
+
+        Returns:
+            dict with 'session_id', 'client_secret', 'amount'
+
+        Raises:
+            WalletError: If session creation fails or validation fails
+        """
+        # Validate amount
+        amount = _quantize(amount)
+        if amount < self.settings.STRIPE_MIN_TOP_UP:
+            raise WalletError(f"Minimum top-up amount is {self.settings.STRIPE_MIN_TOP_UP} {currency.upper()}")
+        if amount > self.settings.STRIPE_MAX_TOP_UP:
+            raise WalletError(f"Maximum top-up amount is {self.settings.STRIPE_MAX_TOP_UP} {currency.upper()}")
+
+        # Get or create balance
+        balance, _ = Balance.objects.get_or_create(user=user)
+
+        # Convert amount to cents for Stripe
+        amount_cents = int(amount * 100)
+
+        try:
+            # Create checkout session
+            session = self.stripe.checkout.Session.create(
+                ui_mode="embedded",
+                line_items=[
+                    {
+                        "price_data": {
+                            "currency": currency,
+                            "product_data": {
+                                "name": "Wallet Top-Up",
+                                "description": f"Add {amount} {currency.upper()} to your canteen wallet",
+                            },
+                            "unit_amount": amount_cents,
+                        },
+                        "quantity": 1,
+                    }
+                ],
+                mode="payment",
+                return_url=self.settings.STRIPE_RETURN_URL + "?session_id={CHECKOUT_SESSION_ID}",
+                metadata={
+                    "user_id": str(user.id),
+                    "balance_id": str(balance.id),
+                    "type": "wallet_topup",
+                },
+            )
+
+            # Create a pending transaction record
+            tx = Transaction.objects.create(
+                balance=balance,
+                type=TransactionType.DEPOSIT,
+                amount=amount,
+                remaining_balance=balance.current_balance,  # Will be updated on completion
+                status=TransactionStatus.PENDING,
+                stripe_checkout_session_id=session.id,
+                order=None,
+            )
+
+            return {
+                "session_id": session.id,
+                "client_secret": session.client_secret,
+                "amount": str(amount),
+                "currency": currency,
+                "transaction_id": str(tx.id),
+            }
+
+        except self.stripe.error.StripeError as e:
+            raise WalletError(f"Failed to create checkout session: {str(e)}") from e
+
+    def retrieve_session_status(self, session_id: str) -> dict:
+        """
+        Retrieve the status of a Stripe checkout session.
+
+        Args:
+            session_id: Stripe checkout session ID
+
+        Returns:
+            dict with 'status', 'payment_status', 'amount_total', 'customer_email'
+
+        Raises:
+            WalletError: If retrieval fails
+        """
+        try:
+            session = self.stripe.checkout.Session.retrieve(session_id)
+
+            return {
+                "status": session.status,
+                "payment_status": session.payment_status,
+                "amount_total": session.amount_total / 100 if session.amount_total else 0,
+                "currency": session.currency,
+                "customer_email": session.customer_details.email if session.customer_details else None,
+            }
+
+        except self.stripe.error.StripeError as e:
+            raise WalletError(f"Failed to retrieve session status: {str(e)}") from e
+
+    def get_transaction_by_session(self, session_id: str) -> Transaction:
+        """
+        Get transaction record by Stripe checkout session ID.
+
+        Args:
+            session_id: Stripe checkout session ID
+
+        Returns:
+            Transaction instance
+
+        Raises:
+            Transaction.DoesNotExist: If no transaction found
+        """
+        return Transaction.objects.get(stripe_checkout_session_id=session_id)

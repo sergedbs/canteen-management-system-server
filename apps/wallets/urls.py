@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from apps.wallets import views
 
 app_name = "wallets"
 
@@ -11,6 +11,13 @@ urlpatterns = [
     path(
         "me/transactions/<uuid:id>/", views.WalletTransactionDetailMeView.as_view(), name="wallet-transaction-detail-me"
     ),
+    # Stripe endpoints for customers
+    path(
+        "stripe/create-checkout-session/",
+        views.CreateCheckoutSessionView.as_view(),
+        name="stripe-create-checkout-session",
+    ),
+    path("stripe/session-status/", views.SessionStatusView.as_view(), name="stripe-session-status"),
     # existing staff/admin endpoints
     # Wallet endpoints
     path("<uuid:user_id>/", views.WalletView.as_view(), name="wallet-detail"),
