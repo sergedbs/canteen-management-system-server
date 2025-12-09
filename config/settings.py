@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 from pathlib import Path
 
 from environ import Env
@@ -71,6 +72,7 @@ LOCAL_APPS = [
     "apps.orders",
     "apps.wallets",
     "apps.users",
+    "apps.webhooks",
 ]
 
 INSTALLED_APPS = [*UNFOLD_APPS, *STD_APPS, *REMOTE_APPS, *LOCAL_APPS]
@@ -256,3 +258,13 @@ MICROSOFT_REDIRECT_URI = env("MICROSOFT_REDIRECT_URI", default="http://localhost
 
 # Frontend URL for redirects after OAuth
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
+
+# Stripe Settings
+STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
+STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY", default="")
+STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
+STRIPE_RETURN_URL = env("STRIPE_RETURN_URL", default=f"{FRONTEND_URL}/wallet/top-up/return")
+
+# Stripe Top-up Limits
+STRIPE_MIN_TOP_UP = Decimal(env("STRIPE_MIN_TOP_UP", default="5.00"))
+STRIPE_MAX_TOP_UP = Decimal(env("STRIPE_MAX_TOP_UP", default="500.00"))
