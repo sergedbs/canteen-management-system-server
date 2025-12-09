@@ -21,6 +21,7 @@ dependencies = [
     "qrcode>=8.2",
     "redis>=6.4.0",
     "ruff~=0.12.12",
+    "stripe~=14.0.1",
 ]
 
 [dependency-groups]
