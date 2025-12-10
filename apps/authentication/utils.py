@@ -85,3 +85,7 @@ def verify_password_reset_token(token, max_age=3600):  # 1 hour expiration
         return user_id
     except (BadSignature, SignatureExpired):
         return None
+
+
+# Microsoft OAuth: PKCE is now handled by frontend MSAL library.
+# Backend validates Microsoft Bearer tokens via MicrosoftBearerAuthentication class.

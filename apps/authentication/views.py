@@ -20,7 +20,6 @@ from apps.authentication.serializers import (
     MFASetupConfirmSerializer,
     MFASetupStartSerializer,
     MFAVerifySerializer,
-    MicrosoftAuthTokenSerializer,
     PasswordChangeSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
@@ -29,9 +28,7 @@ from apps.authentication.serializers import (
 )
 from apps.authentication.services import (
     disable_mfa,
-    get_microsoft_auth_url,
     handle_mfa_flow,
-    handle_microsoft_callback,
     regenerate_backup_codes,
     send_password_reset_email,
     send_verification_email,
@@ -311,43 +308,6 @@ class PasswordResetConfirmView(APIView):
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
-class MicrosoftAuthStartView(APIView):
-    """Start Microsoft OAuth flow - returns authorization URL."""
-
-    permission_classes = [AllowAny]
-    authentication_classes = []
-
-    def get(self, request):
-        data = get_microsoft_auth_url()
-        return Response(data, status=status.HTTP_200_OK)
-
-
-class MicrosoftAuthTokenView(APIView):
-    """Exchange Microsoft authorization code for JWT tokens.
-
-    Frontend receives the authorization code from Microsoft redirect,
-    then POSTs it here to exchange for tokens securely.
-    """
-
-    permission_classes = [AllowAny]
-    authentication_classes = []
-    serializer_class = MicrosoftAuthTokenSerializer
-
-    def post(self, request):
-        """Exchange authorization code for tokens."""
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        code = serializer.validated_data["code"]
-        state = serializer.validated_data["state"]
-
-        data = handle_microsoft_callback(code, state)
-
-        # Check if MFA is required
-        if data.get("mfa_required"):
-            return Response(data, status=status.HTTP_200_OK)
-
-        # Set refresh token as httpOnly cookie
-        response = Response(data, status=status.HTTP_200_OK)
-        set_refresh_cookie(response, data.get("refresh"), request)
-        return response
+# Microsoft OAuth: Frontend handles full flow via MSAL library.
+# Backend validates Microsoft Bearer tokens via MicrosoftBearerAuthentication class.
+# No views needed - tokens are validated automatically on protected endpoints.

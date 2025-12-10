@@ -10,8 +10,6 @@ from .views import (
     MFASetupConfirmView,
     MFASetupStartView,
     MFAVerifyView,
-    MicrosoftAuthStartView,
-    MicrosoftAuthTokenView,
     PasswordChangeView,
     PasswordResetConfirmView,
     PasswordResetRequestView,
@@ -36,7 +34,6 @@ urlpatterns = [
     path("mfa/setup/regenerate", MFABackupCodesRegenerateView.as_view(), name="mfa_backup_codes_regenerate"),
     path("mfa/verify", MFAVerifyView.as_view(), name="mfa_verify"),
     path("mfa/disable", MFADisableView.as_view(), name="mfa_disable"),
-    # Microsoft OAuth
-    path("microsoft/", MicrosoftAuthStartView.as_view(), name="microsoft_auth_start"),
-    path("microsoft/token/", MicrosoftAuthTokenView.as_view(), name="microsoft_auth_token"),
+    # Microsoft OAuth: Frontend handles full flow via MSAL, backend validates Bearer tokens
+    # via MicrosoftBearerAuthentication class - no endpoints needed
 ]
