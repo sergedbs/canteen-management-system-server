@@ -281,6 +281,7 @@ def get_microsoft_auth_url() -> dict:
         scopes=["User.Read"],
         redirect_uri=settings.MICROSOFT_REDIRECT_URI,
         state=state,
+        prompt="select_account",
     )
 
     return {
