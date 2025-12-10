@@ -289,17 +289,29 @@ def get_microsoft_auth_url() -> dict:
     }
 
 
-def handle_microsoft_callback(code: str, state: str | None = None) -> dict:
-    """Handle Microsoft OAuth callback and authenticate/create user."""
-    # Validate state if provided (CSRF protection)
-    # In production, this should be strict. For development, we log a warning.
-    if state:
-        stored_state = redis_client.get(f"oauth:state:{state}")
-        if stored_state:
-            redis_client.delete(f"oauth:state:{state}")
-        # Note: In production, uncomment this to enforce state validation:
-        # else:
-        #     raise exceptions.ValidationError({"error": "Invalid or expired OAuth state"})
+def handle_microsoft_callback(code: str, state: str) -> dict:
+    """Handle Microsoft OAuth token exchange and authenticate/create user.
+
+    Args:
+        code: Authorization code from Microsoft redirect
+        state: State parameter for CSRF protection (required)
+
+    Returns:
+        Dict with JWT tokens or MFA challenge
+
+    Raises:
+        ValidationError: If state is invalid/expired or authentication fails
+    """
+    # Strict state validation (CSRF protection)
+    if not state:
+        raise exceptions.ValidationError({"error": "State parameter is required"})
+
+    stored_state = redis_client.get(f"oauth:state:{state}")
+    if not stored_state:
+        raise exceptions.ValidationError({"error": "Invalid or expired OAuth state"})
+
+    # Delete state immediately (one-time use)
+    redis_client.delete(f"oauth:state:{state}")
 
     app = get_msal_app()
 
