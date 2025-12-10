@@ -137,6 +137,8 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         return value
 
 
-class MicrosoftAuthCallbackSerializer(serializers.Serializer):
-    code = serializers.CharField(required=True)
-    state = serializers.CharField(required=False, allow_blank=True)
+class MicrosoftAuthTokenSerializer(serializers.Serializer):
+    """Serializer for exchanging Microsoft authorization code for tokens."""
+
+    code = serializers.CharField(required=True, help_text="Authorization code from Microsoft redirect")
+    state = serializers.CharField(required=True, help_text="State parameter for CSRF protection")
