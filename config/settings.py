@@ -134,6 +134,7 @@ REST_FRAMEWORK = {
     "DATETIME_FORMAT": "%Y-%m-%dT%H:%M:%SZ",
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "apps.authentication.authentication.MicrosoftBearerAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
@@ -249,10 +250,10 @@ REDIS_PORT = env("REDIS_PORT", default=6379, cast=int)
 MFA_FERNET_KEY = env("MFA_FERNET_KEY", default="")
 
 # Microsoft OAuth Settings
-MICROSOFT_CLIENT_ID = env("MICROSOFT_CLIENT_ID", default="")
-MICROSOFT_CLIENT_SECRET = env("MICROSOFT_CLIENT_SECRET", default="")
-MICROSOFT_TENANT_ID = env("MICROSOFT_TENANT_ID", default="common")
-MICROSOFT_REDIRECT_URI = env("MICROSOFT_REDIRECT_URI", default="http://localhost:8000/auth/microsoft/callback")
+# Frontend handles full OAuth flow via MSAL. Backend only validates Bearer tokens.
+MICROSOFT_CLIENT_ID = env("MICROSOFT_CLIENT_ID", default="")  # Required: App (client) ID from Azure
+MICROSOFT_TENANT_ID = env("MICROSOFT_TENANT_ID", default="common")  # Required: Directory (tenant) ID
+MICROSOFT_API_AUDIENCE = env("MICROSOFT_API_AUDIENCE", default="")  # Optional: Custom API audience
 
 # Frontend URL for redirects after OAuth
-FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:8080")
