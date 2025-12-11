@@ -17,6 +17,9 @@ from .views import (
     PasswordResetRequestView,
     RefreshView,
     RegisterView,
+    SessionListView,
+    SessionRevokeAllView,
+    SessionRevokeView,
 )
 
 app_name = "authentication"
@@ -36,6 +39,10 @@ urlpatterns = [
     path("mfa/setup/regenerate", MFABackupCodesRegenerateView.as_view(), name="mfa_backup_codes_regenerate"),
     path("mfa/verify", MFAVerifyView.as_view(), name="mfa_verify"),
     path("mfa/disable", MFADisableView.as_view(), name="mfa_disable"),
+    # Sessions
+    path("sessions/", SessionListView.as_view(), name="session_list"),
+    path("sessions/revoke-all/", SessionRevokeAllView.as_view(), name="session_revoke_all"),
+    path("sessions/<str:jti>/", SessionRevokeView.as_view(), name="session_revoke"),
     # Microsoft OAuth
     path("microsoft", MicrosoftAuthStartView.as_view(), name="microsoft_auth_start"),
     path("microsoft/callback", MicrosoftAuthCallbackView.as_view(), name="microsoft_auth_callback"),
