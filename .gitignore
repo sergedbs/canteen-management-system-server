@@ -25,3 +25,5 @@ staticfiles/
 # Env files
 .env
 .env.*
+
+TODO.md

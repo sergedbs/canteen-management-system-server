@@ -51,6 +51,9 @@ class Transaction(BaseModel):
     remaining_balance = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=TransactionStatus.choices, default=TransactionStatus.PENDING)
 
+    stripe_checkout_session_id = models.CharField(max_length=255, unique=True, null=True, blank=True, db_index=True)
+    stripe_payment_intent_id = models.CharField(max_length=255, unique=True, null=True, blank=True, db_index=True)
+
     class Meta:
         db_table = "transaction"
         indexes = [

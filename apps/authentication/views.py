@@ -39,6 +39,7 @@ from apps.authentication.services import (
     setup_mfa_start,
     verify_mfa,
 )
+from apps.authentication.session_service import SessionService
 from apps.authentication.utils import verify_email_token, verify_password_reset_token
 
 User = get_user_model()
@@ -103,7 +104,15 @@ class RegisterView(CreateAPIView):
         user = User.objects.get(email=response.data["email"])
         send_verification_email(user)
 
-        set_refresh_cookie(response, response.data.get("refresh"), request)
+        # Create session in whitelist
+        refresh_token_str = response.data.get("refresh")
+        if refresh_token_str:
+            from rest_framework_simplejwt.tokens import RefreshToken
+
+            token = RefreshToken(refresh_token_str)
+            SessionService.create_session(user.id, token["jti"], request)
+
+        set_refresh_cookie(response, refresh_token_str, request)
         return response
 
 
@@ -121,9 +130,16 @@ class LoginView(TokenObtainPairView):
             # MFA required - don't set cookies yet
             return Response(mfa_payload, status=status.HTTP_200_OK)
 
-        # No MFA - set refresh cookie
+        # No MFA - create session and set refresh cookie
+        refresh_token_str = serializer.validated_data.get("refresh")
+        if refresh_token_str:
+            from rest_framework_simplejwt.tokens import RefreshToken
+
+            token = RefreshToken(refresh_token_str)
+            SessionService.create_session(user.id, token["jti"], request)
+
         response = Response(serializer.validated_data, status=status.HTTP_200_OK)
-        set_refresh_cookie(response, response.data.get("refresh"), request)
+        set_refresh_cookie(response, refresh_token_str, request)
         return response
 
 
@@ -211,9 +227,19 @@ class MFAVerifyView(APIView):
         serializer.is_valid(raise_exception=True)
         data = verify_mfa(serializer.validated_data["ticket"], serializer.validated_data["code"])
 
-        # After successful MFA verification, set refresh cookie
+        # Create session after successful MFA verification
+        refresh_token_str = data.get("refresh")
+        if refresh_token_str:
+            from rest_framework_simplejwt.tokens import RefreshToken
+
+            token = RefreshToken(refresh_token_str)
+            # Get user_id from the token payload
+            user_id = token.payload.get("user_id")
+            SessionService.create_session(user_id, token["jti"], request)
+
+        # Set refresh cookie
         response = Response(data, status=status.HTTP_200_OK)
-        set_refresh_cookie(response, data.get("refresh"), request)
+        set_refresh_cookie(response, refresh_token_str, request)
         return response
 
 
@@ -229,6 +255,37 @@ class MFADisableView(APIView):
 
 class RefreshView(TokenRefreshView):
     serializer_class = RefreshSerializer
+
+    def post(self, request, *args, **kwargs):
+        # Get the old refresh token from cookie to extract JTI
+        old_refresh_str = request.COOKIES.get(COOKIE_NAME)
+        if not old_refresh_str:
+            raise InvalidToken("No valid token found in cookie")
+
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        try:
+            old_token = RefreshToken(old_refresh_str)
+            old_jti = old_token["jti"]
+        except (InvalidToken, TokenError) as e:
+            raise InvalidToken("Invalid refresh token") from e
+
+        # Validate session exists in whitelist
+        if not SessionService.validate_session(old_jti):
+            raise InvalidToken("Session has been revoked")
+
+        # Proceed with token refresh
+        response = super().post(request, *args, **kwargs)
+
+        # Rotate session in whitelist
+        if response.status_code == 200:
+            new_refresh_str = response.data.get("refresh")
+            if new_refresh_str:
+                new_token = RefreshToken(new_refresh_str)
+                new_jti = new_token["jti"]
+                SessionService.rotate_session(old_jti, new_jti)
+
+        return response
 
     def finalize_response(self, request, response, *args, **kwargs):
         set_refresh_cookie(response, response.data.get("refresh"), request)
@@ -246,6 +303,9 @@ class LogoutView(APIView):
                 from rest_framework_simplejwt.tokens import RefreshToken
 
                 token = RefreshToken(refresh)
+                # Revoke session from whitelist
+                SessionService.revoke_session(token["jti"])
+                # Also blacklist the token (defense in depth)
                 token.blacklist()
             except (InvalidToken, TokenError):
                 pass  # logout as idempotent
@@ -268,6 +328,72 @@ class PasswordChangeView(GenericAPIView):
         user.save()
 
         return Response({"message": "Password changed successfully."}, status=status.HTTP_200_OK)
+
+
+class SessionListView(APIView):
+    """List all active sessions for the current user."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        sessions = SessionService.list_sessions(request.user.id)
+
+        # Mark the current session
+        current_jti = None
+        refresh = request.COOKIES.get(COOKIE_NAME)
+        if refresh:
+            try:
+                from rest_framework_simplejwt.tokens import RefreshToken
+
+                token = RefreshToken(refresh)
+                current_jti = token["jti"]
+            except (InvalidToken, TokenError):
+                pass
+
+        for session in sessions:
+            session["is_current"] = session["jti"] == current_jti
+
+        return Response({"sessions": sessions}, status=status.HTTP_200_OK)
+
+
+class SessionRevokeView(APIView):
+    """Revoke a specific session by JTI."""
+
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, jti):
+        # Verify the session belongs to the current user
+        sessions = SessionService.list_sessions(request.user.id)
+        session_jtis = [s["jti"] for s in sessions]
+
+        if jti not in session_jtis:
+            return Response({"error": "Session not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        SessionService.revoke_session(jti)
+        return Response({"message": "Session revoked"}, status=status.HTTP_200_OK)
+
+
+class SessionRevokeAllView(APIView):
+    """Revoke all sessions except the current one."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        current_jti = None
+        refresh = request.COOKIES.get(COOKIE_NAME)
+        if refresh:
+            try:
+                from rest_framework_simplejwt.tokens import RefreshToken
+
+                token = RefreshToken(refresh)
+                current_jti = token["jti"]
+            except (InvalidToken, TokenError):
+                pass
+
+        if current_jti:
+            SessionService.revoke_all_other_sessions(request.user.id, current_jti)
+
+        return Response({"message": "All other sessions revoked"}, status=status.HTTP_200_OK)
 
 
 class PasswordResetRequestView(APIView):
@@ -343,9 +469,18 @@ class MicrosoftAuthCallbackView(APIView):
         if data.get("mfa_required"):
             return Response(data, status=status.HTTP_200_OK)
 
+        # Create session in whitelist
+        refresh_token_str = data.get("refresh")
+        if refresh_token_str:
+            from rest_framework_simplejwt.tokens import RefreshToken
+
+            token = RefreshToken(refresh_token_str)
+            user_id = token.payload.get("user_id")
+            SessionService.create_session(user_id, token["jti"], request)
+
         # Set refresh token as httpOnly cookie
         response = Response(data, status=status.HTTP_200_OK)
-        set_refresh_cookie(response, data.get("refresh"), request)
+        set_refresh_cookie(response, refresh_token_str, request)
         return response
 
     def get(self, request):
@@ -373,9 +508,18 @@ class MicrosoftAuthCallbackView(APIView):
             # In production, set FRONTEND_URL and this will redirect
             frontend_url = settings.FRONTEND_URL
             if not frontend_url or frontend_url == "http://localhost:3000":
+                # Create session in whitelist
+                refresh_token_str = data.get("refresh")
+                if refresh_token_str:
+                    from rest_framework_simplejwt.tokens import RefreshToken
+
+                    token = RefreshToken(refresh_token_str)
+                    user_id = token.payload.get("user_id")
+                    SessionService.create_session(user_id, token["jti"], request)
+
                 # Return JSON response for testing (no frontend running)
                 response = Response(data, status=status.HTTP_200_OK)
-                set_refresh_cookie(response, data.get("refresh"), request)
+                set_refresh_cookie(response, refresh_token_str, request)
                 return response
 
             # Check if MFA is required
@@ -387,12 +531,21 @@ class MicrosoftAuthCallbackView(APIView):
 
                 return redirect(f"{frontend_url}/auth/mfa?ticket={mfa_ticket}&type={mfa_type}")
 
+            # Create session in whitelist before redirect
+            refresh_token_str = data.get("refresh")
+            if refresh_token_str:
+                from rest_framework_simplejwt.tokens import RefreshToken
+
+                token = RefreshToken(refresh_token_str)
+                user_id = token.payload.get("user_id")
+                SessionService.create_session(user_id, token["jti"], request)
+
             # Redirect to frontend with tokens (access token in URL, refresh in cookie)
             from django.shortcuts import redirect
 
             access_token = data.get("access")
             response = redirect(f"{frontend_url}/auth/microsoft/callback?access_token={access_token}")
-            set_refresh_cookie(response, data.get("refresh"), request)
+            set_refresh_cookie(response, refresh_token_str, request)
             return response
 
         except (ValueError, KeyError) as e:

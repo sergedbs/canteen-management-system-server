@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 from pathlib import Path
 
 from environ import Env
@@ -71,6 +72,7 @@ LOCAL_APPS = [
     "apps.orders",
     "apps.wallets",
     "apps.users",
+    "apps.webhooks",
 ]
 
 INSTALLED_APPS = [*UNFOLD_APPS, *STD_APPS, *REMOTE_APPS, *LOCAL_APPS]
@@ -175,6 +177,92 @@ UNFOLD = {
             "950": "#0a143d",
         },
     },
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": True,
+        "navigation": [
+            {
+                "title": "Sessions",
+                "icon": "devices",
+                "items": [
+                    {
+                        "title": "Active Sessions",
+                        "icon": "devices",
+                        "link": "/admin/authentication/sessions/",
+                    },
+                ],
+            },
+            {
+                "title": "Users",
+                "icon": "people",
+                "items": [
+                    {
+                        "title": "Users",
+                        "icon": "person",
+                        "link": "/admin/users/user/",
+                    },
+                ],
+            },
+            {
+                "title": "Menus",
+                "icon": "restaurant_menu",
+                "items": [
+                    {
+                        "title": "Categories",
+                        "icon": "category",
+                        "link": "/admin/menus/category/",
+                    },
+                    {
+                        "title": "Items",
+                        "icon": "lunch_dining",
+                        "link": "/admin/menus/item/",
+                    },
+                    {
+                        "title": "Menus",
+                        "icon": "menu_book",
+                        "link": "/admin/menus/menu/",
+                    },
+                    {
+                        "title": "Menu Items",
+                        "icon": "list",
+                        "link": "/admin/menus/menuitem/",
+                    },
+                ],
+            },
+            {
+                "title": "Orders",
+                "icon": "shopping_cart",
+                "items": [
+                    {
+                        "title": "Orders",
+                        "icon": "receipt_long",
+                        "link": "/admin/orders/order/",
+                    },
+                    {
+                        "title": "Order Items",
+                        "icon": "list_alt",
+                        "link": "/admin/orders/orderitem/",
+                    },
+                ],
+            },
+            {
+                "title": "Wallets",
+                "icon": "account_balance_wallet",
+                "items": [
+                    {
+                        "title": "Balances",
+                        "icon": "payments",
+                        "link": "/admin/wallets/balance/",
+                    },
+                    {
+                        "title": "Transactions",
+                        "icon": "swap_horiz",
+                        "link": "/admin/wallets/transaction/",
+                    },
+                ],
+            },
+        ],
+    },
 }
 
 
@@ -255,4 +343,14 @@ MICROSOFT_TENANT_ID = env("MICROSOFT_TENANT_ID", default="common")
 MICROSOFT_REDIRECT_URI = env("MICROSOFT_REDIRECT_URI", default="http://localhost:8000/auth/microsoft/callback")
 
 # Frontend URL for redirects after OAuth
-FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:8080")
+
+# Stripe Settings
+STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
+STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY", default="")
+STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
+STRIPE_RETURN_URL = env("STRIPE_RETURN_URL", default=f"{FRONTEND_URL}/wallet/top-up/return")
+
+# Stripe Top-up Limits
+STRIPE_MIN_TOP_UP = Decimal(env("STRIPE_MIN_TOP_UP", default="5.00"))
+STRIPE_MAX_TOP_UP = Decimal(env("STRIPE_MAX_TOP_UP", default="500.00"))

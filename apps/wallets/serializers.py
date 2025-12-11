@@ -138,3 +138,55 @@ class RefundPaymentSerializer(BaseOrderTransactionSerializer):
         except WalletError as err:
             raise serializers.ValidationError(str(err)) from err
         return result.transaction
+
+
+class CreateCheckoutSessionSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        min_value=Decimal("0.01"),
+        required=True,
+        help_text="Amount to top up in dollars (e.g., 50.00)",
+    )
+    currency = serializers.CharField(
+        max_length=3,
+        default="mdl",
+        required=False,
+        help_text="Currency code (e.g., mdl, usd, eur)",
+    )
+
+    def validate_amount(self, value: Decimal):
+        from django.conf import settings
+
+        if value < settings.STRIPE_MIN_TOP_UP:
+            raise serializers.ValidationError(f"Minimum top-up amount is {settings.STRIPE_MIN_TOP_UP}")
+        if value > settings.STRIPE_MAX_TOP_UP:
+            raise serializers.ValidationError(f"Maximum top-up amount is {settings.STRIPE_MAX_TOP_UP}")
+        return value
+
+    def validate_currency(self, value: str):
+        value = value.lower()
+        # Add more currencies as needed
+        allowed_currencies = ["usd", "eur", "gbp", "mdl"]
+        if value not in allowed_currencies:
+            raise serializers.ValidationError(f"Currency must be one of: {', '.join(allowed_currencies)}")
+        return value
+
+
+class CheckoutSessionResponseSerializer(serializers.Serializer):
+    session_id = serializers.CharField(read_only=True, help_text="Stripe checkout session ID")
+    client_secret = serializers.CharField(read_only=True, help_text="Client secret for embedded checkout")
+    amount = serializers.CharField(read_only=True, help_text="Top-up amount")
+    currency = serializers.CharField(read_only=True, help_text="Currency code")
+    transaction_id = serializers.UUIDField(read_only=True, help_text="Database transaction ID")
+
+
+class SessionStatusResponseSerializer(serializers.Serializer):
+    status = serializers.CharField(read_only=True, help_text="Session status (open, complete, expired)")
+    payment_status = serializers.CharField(read_only=True, help_text="Payment status (paid, unpaid)")
+    amount_total = serializers.DecimalField(
+        max_digits=10, decimal_places=2, read_only=True, help_text="Total amount in dollars"
+    )
+    currency = serializers.CharField(read_only=True, help_text="Currency code")
+    customer_email = serializers.EmailField(read_only=True, allow_null=True, help_text="Customer email if provided")
+    transaction_status = serializers.CharField(read_only=True, allow_null=True, help_text="Database transaction status")
