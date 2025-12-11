@@ -18,8 +18,13 @@ JWKS_CACHE_KEY = "microsoft:jwks"
 JWKS_CACHE_TTL = 3600  # seconds
 
 
-def _fetch_jwks() -> dict:
-    cached = redis_client.get(JWKS_CACHE_KEY)
+def _fetch_jwks(tenant_id: str = "common") -> dict:
+    """Fetch Microsoft's JSON Web Key Set for token signature verification.
+
+    For multi-tenant apps, use 'common' to get keys that work across all tenants.
+    """
+    cache_key = f"{JWKS_CACHE_KEY}:{tenant_id}"
+    cached = redis_client.get(cache_key)
     if cached:
         try:
             return json.loads(cached)
@@ -27,16 +32,17 @@ def _fetch_jwks() -> dict:
             # fallthrough to refetch
             pass
 
-    url = f"https://login.microsoftonline.com/{settings.MICROSOFT_TENANT_ID}/discovery/v2.0/keys"
+    # Use 'common' for multi-tenant apps to get keys for all tenants
+    url = f"https://login.microsoftonline.com/{tenant_id}/discovery/v2.0/keys"
     with urllib.request.urlopen(url, timeout=5) as resp:  # noqa: S310 - trusted Microsoft URL
         body = resp.read()
         jwks = json.loads(body)
 
-    redis_client.setex(JWKS_CACHE_KEY, JWKS_CACHE_TTL, json.dumps(jwks))
+    redis_client.setex(cache_key, JWKS_CACHE_TTL, json.dumps(jwks))
     return jwks
 
 
-def _get_public_key(token: str) -> str | None:
+def _get_public_key(token: str, tenant_id: str = "common") -> str | None:
     try:
         unverified_header = jwt.get_unverified_header(token)
     except PyJWTError:
@@ -46,7 +52,7 @@ def _get_public_key(token: str) -> str | None:
     if not kid:
         return None
 
-    jwks = _fetch_jwks()
+    jwks = _fetch_jwks(tenant_id)
     keys = jwks.get("keys", [])
     for key in keys:
         if key.get("kid") == kid:
@@ -56,6 +62,23 @@ def _get_public_key(token: str) -> str | None:
 
 def _is_microsoft_issuer(issuer: str) -> bool:
     return issuer.startswith("https://login.microsoftonline.com/")
+
+
+def _extract_tenant_from_issuer(issuer: str) -> str | None:
+    """Extract tenant ID from Microsoft issuer URL.
+
+    Example: https://login.microsoftonline.com/abcd1234-.../v2.0 -> abcd1234-...
+    """
+    if not _is_microsoft_issuer(issuer):
+        return None
+    # Format: https://login.microsoftonline.com/{tenant}/v2.0
+    parts = issuer.replace("https://login.microsoftonline.com/", "").split("/")
+    return parts[0] if parts else None
+
+
+def _is_multi_tenant_config() -> bool:
+    """Check if the app is configured for multi-tenant authentication."""
+    return settings.MICROSOFT_TENANT_ID in ("common", "organizations", "consumers")
 
 
 class MicrosoftBearerAuthentication(BaseAuthentication):
@@ -89,13 +112,27 @@ class MicrosoftBearerAuthentication(BaseAuthentication):
         if not _is_microsoft_issuer(issuer):
             return None  # not Microsoft -> let other authenticators run
 
-        expected_issuer = f"https://login.microsoftonline.com/{settings.MICROSOFT_TENANT_ID}/v2.0"
+        # For multi-tenant apps, extract tenant from token and validate format only
+        # For single-tenant apps, validate against configured tenant
+        token_tenant = _extract_tenant_from_issuer(issuer)
+        if not token_tenant:
+            raise AuthenticationFailed("Invalid Microsoft token issuer format.")
+
+        if _is_multi_tenant_config():
+            # Multi-tenant: accept any valid Microsoft issuer, use token's tenant for JWKS
+            expected_issuer = f"https://login.microsoftonline.com/{token_tenant}/v2.0"
+            jwks_tenant = "common"  # Use common endpoint for multi-tenant key discovery
+        else:
+            # Single-tenant: validate against configured tenant
+            expected_issuer = f"https://login.microsoftonline.com/{settings.MICROSOFT_TENANT_ID}/v2.0"
+            jwks_tenant = settings.MICROSOFT_TENANT_ID
+
         audiences = [settings.MICROSOFT_CLIENT_ID]
         api_audience = getattr(settings, "MICROSOFT_API_AUDIENCE", "")
         if api_audience:
             audiences.append(api_audience)
 
-        public_key = _get_public_key(raw_token)
+        public_key = _get_public_key(raw_token, jwks_tenant)
         if not public_key:
             raise AuthenticationFailed("Unable to fetch Microsoft signing key.")
 
