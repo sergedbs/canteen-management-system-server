@@ -105,11 +105,15 @@ class MicrosoftBearerAuthentication(BaseAuthentication):
         # Quick unverified decode to decide if this is a Microsoft token; if not, let other auth classes handle it.
         try:
             unverified_claims = jwt.decode(raw_token, options={"verify_signature": False})
-        except PyJWTError:
+        except PyJWTError as e:
+            logger.debug("Token decode failed (not a JWT?): %s", e)
             return None
 
         issuer = unverified_claims.get("iss", "")
+        logger.debug("Token issuer: %s", issuer)
+
         if not _is_microsoft_issuer(issuer):
+            logger.debug("Not a Microsoft token, passing to next authenticator")
             return None  # not Microsoft -> let other authenticators run
 
         # For multi-tenant apps, extract tenant from token and validate format only
@@ -117,6 +121,8 @@ class MicrosoftBearerAuthentication(BaseAuthentication):
         token_tenant = _extract_tenant_from_issuer(issuer)
         if not token_tenant:
             raise AuthenticationFailed("Invalid Microsoft token issuer format.")
+
+        logger.debug("Multi-tenant config: %s, Token tenant: %s", _is_multi_tenant_config(), token_tenant)
 
         if _is_multi_tenant_config():
             # Multi-tenant: accept any valid Microsoft issuer, use token's tenant for JWKS
@@ -127,13 +133,21 @@ class MicrosoftBearerAuthentication(BaseAuthentication):
             expected_issuer = f"https://login.microsoftonline.com/{settings.MICROSOFT_TENANT_ID}/v2.0"
             jwks_tenant = settings.MICROSOFT_TENANT_ID
 
+        logger.debug("Expected issuer: %s", expected_issuer)
+
+        # For ID tokens, audience is the client ID
+        # For access tokens, it could be client ID or custom API audience
         audiences = [settings.MICROSOFT_CLIENT_ID]
         api_audience = getattr(settings, "MICROSOFT_API_AUDIENCE", "")
         if api_audience:
             audiences.append(api_audience)
+        # Also accept api:// prefixed audience (common in access tokens)
+        audiences.append(f"api://{settings.MICROSOFT_CLIENT_ID}")
+        logger.debug("Allowed audiences: %s", audiences)
 
         public_key = _get_public_key(raw_token, jwks_tenant)
         if not public_key:
+            logger.error("Could not fetch public key for token")
             raise AuthenticationFailed("Unable to fetch Microsoft signing key.")
 
         try:
