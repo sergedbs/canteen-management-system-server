@@ -137,6 +137,5 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         return value
 
 
-class MicrosoftAuthCallbackSerializer(serializers.Serializer):
-    code = serializers.CharField(required=True)
-    state = serializers.CharField(required=False, allow_blank=True)
+# Microsoft OAuth: No serializers needed - frontend handles full flow via MSAL.
+# Backend validates Microsoft Bearer tokens via MicrosoftBearerAuthentication class.
